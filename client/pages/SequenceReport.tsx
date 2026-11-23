@@ -7,7 +7,9 @@ type ReportMode = "sequence" | "rapide";
 type ReportLanguage = "ar" | "fr";
 
 interface ReportResult {
-  pdf_url: string;
+  status?: "pending" | "running" | "completed";
+  job_id?: string;
+  pdf_url?: string;
   period?: { from?: string; to?: string };
   reports?: number;
   sessions?: number;
@@ -55,8 +57,23 @@ export default function SequenceReport() {
       });
       const body = await response.json().catch(() => null) as (ReportResult & { error?: string }) | null;
       if (!response.ok) throw new Error(body?.error || `Erreur de génération (${response.status}).`);
-      if (!body?.pdf_url) throw new Error("Aucun lien PDF n’a été retourné.");
-      setResult(body);
+      if (!body?.job_id) throw new Error("CREAO n’a pas retourné de numéro de suivi.");
+
+      let completedReport: ReportResult | null = null;
+      for (let attempt = 0; attempt < 24; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 5000));
+        const pollResponse = await fetch(`${API_BASE}/api/rapport/${encodeURIComponent(body.job_id)}`, {
+          headers: getAuthHeaders(),
+        });
+        const pollBody = await pollResponse.json().catch(() => null) as (ReportResult & { status?: string; error?: string }) | null;
+        if (!pollResponse.ok) throw new Error(pollBody?.error || `Erreur de suivi (${pollResponse.status}).`);
+        if (pollBody?.status === "completed" && pollBody.pdf_url) {
+          completedReport = pollBody;
+          break;
+        }
+      }
+      if (!completedReport) throw new Error("La génération prend trop de temps. Réessayez dans quelques instants.");
+      setResult(completedReport);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Impossible de générer le rapport.");
     } finally {
@@ -140,7 +157,7 @@ export default function SequenceReport() {
           {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>}
 
           <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-3 rounded-xl shm-gradient px-6 py-4 font-black text-white shadow-lg shadow-primary/20 transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
-            {loading ? <><Loader2 size={19} className="animate-spin" />جاري إعداد التقرير، قد يستغرق ذلك بعض الوقت…</> : "إنشاء تقرير PDF"}
+            {loading ? <><Loader2 size={19} className="animate-spin" />جاري إعداد التقرير ومتابعة التنفيذ…</> : "إنشاء تقرير PDF"}
           </button>
         </form>
 

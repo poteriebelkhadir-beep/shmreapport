@@ -1,9 +1,14 @@
+import jwt from "jsonwebtoken";
 import type { RequestHandler } from "express";
 import { consume, getClientIp } from "../lib/rateLimit";
 
+const CREAO_API_BASE = "https://developer.creao.ai/v2";
 const DEFAULT_AGENT_ID = "db2ebc26-4444-4662-9ea9-ca6024ff52dc";
+const JOB_AUDIENCE = "shm-rapport-creao-run";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ALLOWED_TABLES = new Set(["reports", "sessions"]);
+
+type ReportMode = "sequence" | "rapide";
 
 function isIsoDate(value: unknown): value is string {
   if (typeof value !== "string" || !ISO_DATE.test(value)) return false;
@@ -15,15 +20,38 @@ function safePdfUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password ? url.toString() : null;
+    return url.protocol === "https:" && url.pathname.toLowerCase().endsWith(".pdf") && !url.username && !url.password
+      ? url.toString()
+      : null;
   } catch {
     return null;
   }
 }
 
+function getPdfArtifactUrl(result: Record<string, any>): string | null {
+  if (typeof result.pdf_url === "string") return safePdfUrl(result.pdf_url);
+  const artifacts = Array.isArray(result.artifacts) ? result.artifacts : [];
+  const pdf = artifacts.find((artifact: any) =>
+    typeof artifact?.name === "string" && /\.pdf$/i.test(artifact.name),
+  );
+  return safePdfUrl(pdf?.url);
+}
+
 function stringList(value: unknown): string[] | undefined {
   if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) return undefined;
   return value.slice(0, 20).map((item) => item.slice(0, 240));
+}
+
+function getCreaoKey(): string | null {
+  return process.env.CREAO_API_KEY || null;
+}
+
+function getRunSummary(result: Record<string, any>) {
+  return {
+    ...result,
+    ...(result.meta && typeof result.meta === "object" ? result.meta : {}),
+    ...(result.summary && typeof result.summary === "object" ? result.summary : {}),
+  };
 }
 
 export const handleGenerateRapport: RequestHandler = async (req, res) => {
@@ -99,23 +127,11 @@ export const handleGenerateRapport: RequestHandler = async (req, res) => {
     inputs.tables = tables.join(",");
   }
 
-  const endpointTemplate = process.env.CREAO_AGENT_RUN_URL;
-  const apiKey = process.env.CREAO_API_KEY;
-  if (!endpointTemplate || !apiKey) {
+  const apiKey = getCreaoKey();
+  const jwtSecret = process.env.JWT_SECRET;
+  const userId = req.rapport_user?.sub;
+  if (!apiKey || !jwtSecret || !userId) {
     res.status(503).json({ error: "La connexion à CREAO n’est pas configurée sur le serveur." });
-    return;
-  }
-
-  const agentId = process.env.CREAO_AGENT_ID || DEFAULT_AGENT_ID;
-  let endpoint: URL;
-  try {
-    endpoint = new URL(endpointTemplate.replace(/\{AGENT_ID\}/g, agentId));
-  } catch {
-    res.status(503).json({ error: "L’URL du service CREAO est invalide." });
-    return;
-  }
-  if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password) {
-    res.status(503).json({ error: "L’URL du service CREAO doit utiliser HTTPS." });
     return;
   }
 
@@ -128,37 +144,109 @@ export const handleGenerateRapport: RequestHandler = async (req, res) => {
   }
 
   try {
-    const upstream = await fetch(endpoint, {
+    const upstream = await fetch(`${CREAO_API_BASE}/runs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ inputs }),
-      signal: AbortSignal.timeout(110_000),
+      body: JSON.stringify({
+        agent_id: process.env.CREAO_AGENT_ID || DEFAULT_AGENT_ID,
+        input: inputs,
+      }),
+      signal: AbortSignal.timeout(20_000),
     });
-    if (!upstream.ok) {
-      res.status(502).json({ error: "Le service CREAO n’a pas pu générer le rapport." });
+    const data = await upstream.json().catch(() => null) as Record<string, any> | null;
+    if (!upstream.ok || typeof data?.run_id !== "string") {
+      if (upstream.status === 429) {
+        res.status(429).json({ error: "Le service CREAO limite actuellement les demandes. Réessayez plus tard." });
+        return;
+      }
+      console.error("CREAO run creation failed:", upstream.status, data?.error);
+      res.status(502).json({ error: "Le service CREAO n’a pas pu démarrer la génération." });
       return;
     }
 
-    const data = await upstream.json() as Record<string, any>;
-    const pdfUrl = safePdfUrl(data.pdf_url ?? data.artifacts?.[0]?.url);
+    const jobId = jwt.sign({ sub: userId, run_id: data.run_id }, jwtSecret, {
+      algorithm: "HS256",
+      audience: JOB_AUDIENCE,
+      issuer: "shm-rapports",
+      expiresIn: "10m",
+    });
+    res.status(202).json({ job_id: jobId, status: data.status === "running" ? "running" : "pending" });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      res.status(504).json({ error: "Impossible de joindre CREAO pour démarrer le rapport." });
+      return;
+    }
+    console.error("CREAO run creation failed:", error);
+    res.status(502).json({ error: "Impossible de joindre le service CREAO." });
+  }
+};
+
+export const handleGetRapport: RequestHandler = async (req, res) => {
+  const apiKey = getCreaoKey();
+  const jwtSecret = process.env.JWT_SECRET;
+  const userId = req.rapport_user?.sub;
+  if (!apiKey || !jwtSecret || !userId) {
+    res.status(503).json({ error: "La connexion à CREAO n’est pas configurée sur le serveur." });
+    return;
+  }
+
+  const jobId = req.params.jobId;
+  if (typeof jobId !== "string") {
+    res.status(400).json({ error: "L’identifiant de suivi est invalide." });
+    return;
+  }
+
+  let runId: string;
+  try {
+    const ticket = jwt.verify(jobId, jwtSecret, {
+      algorithms: ["HS256"],
+      audience: JOB_AUDIENCE,
+      issuer: "shm-rapports",
+    }) as jwt.JwtPayload;
+    if (ticket.sub !== userId || typeof ticket.run_id !== "string") {
+      res.status(403).json({ error: "Ce rapport ne vous appartient pas." });
+      return;
+    }
+    runId = ticket.run_id;
+  } catch {
+    res.status(400).json({ error: "Le suivi de ce rapport a expiré. Relancez la génération." });
+    return;
+  }
+
+  try {
+    const upstream = await fetch(`${CREAO_API_BASE}/runs/${encodeURIComponent(runId)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+    const run = await upstream.json().catch(() => null) as Record<string, any> | null;
+    if (!upstream.ok || !run) {
+      console.error("CREAO run lookup failed:", upstream.status, run?.error);
+      res.status(502).json({ error: "Impossible de récupérer l’état du rapport." });
+      return;
+    }
+    if (run.status === "failed" || run.status === "cancelled") {
+      res.status(502).json({ error: "CREAO n’a pas pu terminer la génération du rapport." });
+      return;
+    }
+    if (run.status !== "completed") {
+      res.json({ status: run.status === "running" ? "running" : "pending" });
+      return;
+    }
+
+    const result = run.result && typeof run.result === "object" ? run.result : {};
+    const summary = getRunSummary(result);
+    const pdfUrl = getPdfArtifactUrl(result);
     if (!pdfUrl) {
-      res.status(502).json({ error: "CREAO n’a pas retourné de lien PDF public valide." });
+      res.status(502).json({ error: "CREAO a terminé le rapport sans fournir de lien PDF public valide." });
       return;
     }
 
-    const summary = {
-      ...data,
-      ...(data.meta && typeof data.meta === "object" ? data.meta : {}),
-      ...(data.summary && typeof data.summary === "object" ? data.summary : {}),
-    };
-    const period = summary.period && typeof summary.period === "object"
-      ? summary.period
-      : inputs.date_from && inputs.date_to ? { from: inputs.date_from, to: inputs.date_to } : undefined;
-
+    const period = summary.period && typeof summary.period === "object" ? summary.period : undefined;
     res.json({
+      status: "completed",
       pdf_url: pdfUrl,
       ...(period ? { period } : {}),
       ...(typeof summary.reports === "number" ? { reports: summary.reports } : {}),
@@ -171,10 +259,10 @@ export const handleGenerateRapport: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Error && error.name === "TimeoutError") {
-      res.status(504).json({ error: "La génération du rapport a dépassé le délai autorisé. Réessayez ou configurez le traitement asynchrone CREAO." });
+      res.status(504).json({ error: "Le service CREAO met trop de temps à répondre." });
       return;
     }
-    console.error("CREAO report generation failed:", error);
+    console.error("CREAO run lookup failed:", error);
     res.status(502).json({ error: "Impossible de joindre le service CREAO." });
   }
 };
