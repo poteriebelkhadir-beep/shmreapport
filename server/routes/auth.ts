@@ -31,8 +31,6 @@ const normalizeName = (value: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
-const isIsoDate = (value: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value);
-
 function noStore(res: Response) {
   res.setHeader("Cache-Control", "no-store");
 }
@@ -40,7 +38,6 @@ function noStore(res: Response) {
 interface LoginBody {
   firstName?: unknown;
   lastName?: unknown;
-  birthDate?: unknown;
   pin?: unknown;
   password?: unknown;
 }
@@ -55,15 +52,11 @@ router.post("/login", async (req: Request, res: Response) => {
   const body = (req.body ?? {}) as LoginBody;
   const firstName = clean(body.firstName);
   const lastName = clean(body.lastName);
-  const birthDate = clean(body.birthDate);
   const pin = clean(body.pin);
   const password = typeof body.password === "string" ? body.password : "";
 
-  if (!firstName || !lastName || !birthDate || !pin || !password) {
+  if (!firstName || !lastName || !pin || !password) {
     return res.status(400).json({ error: "الرجاء ملء جميع الحقول." });
-  }
-  if (!isIsoDate(birthDate)) {
-    return res.status(400).json({ error: "تاريخ الميلاد غير صالح." });
   }
   if (!/^\d{4,8}$/.test(pin)) {
     return res.status(400).json({ error: "يجب أن يتكون رمز PIN من أرقام فقط." });
@@ -80,14 +73,10 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 
   try {
-    // On filtre d'abord sur la date de naissance (indexée et non ambiguë),
-    // puis on compare les noms normalisés en mémoire : cela évite les
-    // injections de motifs dans les filtres PostgREST (ILINE, %).
     const { data: candidates, error } = await supabaseAdmin
       .from(TABLE)
       .select("id, first_name, last_name, birth_date, pin_hash, password_hash, role, is_active, failed_attempts, locked_until")
-      .eq("birth_date", birthDate)
-      .limit(20);
+      .limit(50);
 
     if (error) {
       console.error("[auth] lecture rapport_users:", error.message);

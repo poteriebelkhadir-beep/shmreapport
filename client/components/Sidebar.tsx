@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   FileText,
   FilePlus2,
-  CalendarPlus,
   HardDriveDownload,
   LogOut,
 } from "lucide-react";
@@ -20,7 +19,6 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "لوحة القيادة", icon: LayoutDashboard },
   { to: "/reports", label: "التقارير والحصص", icon: FileText },
   { to: "/add-report", label: "إضافة تقرير", icon: FilePlus2 },
-  { to: "/add-session", label: "إضافة حصة", icon: CalendarPlus },
   { to: "/sync-cache", label: "المخزن المحلي", icon: HardDriveDownload },
 ];
 

@@ -30,17 +30,6 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate("/add-session")}
-            className="flex-1 shm-card group hover:-translate-y-2 !p-5"
-          >
-            <div className="w-12 h-12 shm-gradient text-white rounded-xl flex items-center justify-center mb-4 shadow-md shadow-primary/20 group-hover:scale-110 transition-transform">
-              <span className="text-2xl">📝</span>
-            </div>
-            <h3 className="text-2xl font-black text-gray-800 mb-2">إضافة حصة</h3>
-            <p className="text-gray-400 text-sm font-medium">طريقة 5W البيداغوجية</p>
-          </button>
-
-          <button
             onClick={() => navigate("/reports")}
             className="flex-1 shm-card group hover:-translate-y-2 bg-gray-50 border-gray-100 !p-5"
           >

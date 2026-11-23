@@ -9,7 +9,6 @@ export default function Login() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    birthDate: "",
     pin: "",
     password: "",
   });
@@ -28,7 +27,7 @@ export default function Login() {
     setError("");
     setFieldErrors({});
 
-    if (!formData.firstName || !formData.lastName || !formData.birthDate || !formData.pin || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.pin || !formData.password) {
       setError("الرجاء ملء جميع الحقول.");
       return;
     }
@@ -46,7 +45,6 @@ export default function Login() {
       const result = await login({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        birthDate: formData.birthDate,
         pin: formData.pin.trim(),
         password: formData.password,
       });
@@ -54,7 +52,7 @@ export default function Login() {
       if (!result.ok) {
         setError(result.error || "معلومات تسجيل الدخول غير صحيحة.");
         if (result.status === 401) {
-          setFieldErrors({ firstName: true, lastName: true, birthDate: true, pin: true, password: true });
+          setFieldErrors({ firstName: true, lastName: true, pin: true, password: true });
         }
         return;
       }
@@ -109,17 +107,6 @@ export default function Login() {
                 type="text" name="firstName" value={formData.firstName} onChange={handleChange}
                 className={cn("w-full px-5 py-3.5 bg-gray-50 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold",
                   fieldErrors.firstName ? "border-red-200 text-red-600 bg-red-50" : "border-transparent focus:bg-white focus:border-primary/20")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className={cn("block text-xs font-black uppercase tracking-widest mr-1", fieldErrors.birthDate ? "text-red-500" : "text-gray-500")}>
-                تاريخ الازدياد
-              </label>
-              <input
-                type="date" name="birthDate" value={formData.birthDate} onChange={handleChange}
-                className={cn("w-full px-5 py-3.5 bg-gray-50 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold",
-                  fieldErrors.birthDate ? "border-red-200 text-red-600 bg-red-50" : "border-transparent focus:bg-white focus:border-primary/20")}
               />
             </div>
 

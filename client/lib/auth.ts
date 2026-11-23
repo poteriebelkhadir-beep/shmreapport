@@ -28,7 +28,6 @@ export interface SessionUser {
 export interface Credentials {
   firstName: string;
   lastName: string;
-  birthDate: string;
   pin: string;
   password: string;
 }
