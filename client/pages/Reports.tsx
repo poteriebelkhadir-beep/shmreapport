@@ -11,16 +11,6 @@ interface Report {
   created_at: string;
 }
 
-interface Session {
-  id: string;
-  title: string;
-  location: string;
-  date_time: string;
-  objective?: string;
-  target_audience?: string;
-  created_at: string;
-}
-
 /**
  * Cache local de la LISTE uniquement (titre, lieu, date, lien PDF).
  * Volontairement sans le corps du rapport : le catalogue reste léger et
@@ -31,7 +21,6 @@ const DOCS_CACHE_KEY = "shm_rapport_docs_cache_v1";
 interface DocsCache {
   savedAt: string;
   reports: Report[];
-  sessions: Session[];
 }
 
 function readCache(): DocsCache | null {
@@ -39,16 +28,16 @@ function readCache(): DocsCache | null {
     const raw = localStorage.getItem(DOCS_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as DocsCache;
-    if (!Array.isArray(parsed.reports) || !Array.isArray(parsed.sessions)) return null;
+    if (!Array.isArray(parsed.reports)) return null;
     return parsed;
   } catch {
     return null;
   }
 }
 
-function writeCache(reports: Report[], sessions: Session[]): void {
+function writeCache(reports: Report[]): void {
   try {
-    const payload: DocsCache = { savedAt: new Date().toISOString(), reports, sessions };
+    const payload: DocsCache = { savedAt: new Date().toISOString(), reports };
     localStorage.setItem(DOCS_CACHE_KEY, JSON.stringify(payload));
   } catch {
     // Quota dépassé : le cache est un confort, jamais un blocage.
@@ -57,9 +46,7 @@ function writeCache(reports: Report[], sessions: Session[]): void {
 
 export default function Reports() {
   const [reports, setReports] = useState<Report[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"reports" | "sessions">("reports");
   const [debugError, setDebugError] = useState<string | null>(null);
   const [cacheInfo, setCacheInfo] = useState<{ savedAt: string } | null>(null);
 
@@ -77,19 +64,16 @@ export default function Reports() {
           throw new Error(body?.error || `Erreur de chargement des documents (${response.status}).`);
         }
 
-        const data = (await response.json()) as { reports: Report[]; sessions: Session[] };
+        const data = (await response.json()) as { reports: Report[] };
         const freshReports = data.reports || [];
-        const freshSessions = data.sessions || [];
         setReports(freshReports);
-        setSessions(freshSessions);
         setCacheInfo(null);
-        writeCache(freshReports, freshSessions);
+        writeCache(freshReports);
       } catch (error: any) {
         console.error("Error fetching data:", error);
         const cached = readCache();
         if (cached) {
           setReports(cached.reports);
-          setSessions(cached.sessions);
           setCacheInfo({ savedAt: cached.savedAt });
           setDebugError(null);
         } else {
@@ -108,32 +92,9 @@ export default function Reports() {
     <Layout>
       <div className="mb-12 animate-in fade-in duration-700">
         <h1 className="text-4xl font-black shm-text-gradient mb-4 uppercase tracking-wider">
-          إدارة الوثائق
+سجل التقارير
         </h1>
         <div className="w-20 h-1.5 shm-gradient rounded-full"></div>
-      </div>
-
-      <div className="flex bg-gray-50 p-2 rounded-2xl mb-10 w-fit animate-in slide-in-from-right-4 duration-500">
-        <button
-          onClick={() => setActiveTab("reports")}
-          className={`px-8 py-3 font-black uppercase tracking-widest text-sm transition-all rounded-xl ${
-            activeTab === "reports"
-              ? "bg-white text-primary shadow-sm"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          التقارير
-        </button>
-        <button
-          onClick={() => setActiveTab("sessions")}
-          className={`px-8 py-3 font-black uppercase tracking-widest text-sm transition-all rounded-xl ${
-            activeTab === "sessions"
-              ? "bg-white text-secondary shadow-sm"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          الحصص
-        </button>
       </div>
 
       {cacheInfo && (
@@ -159,8 +120,7 @@ export default function Reports() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in zoom-in-95 duration-700">
-          {activeTab === "reports" ? (
-            reports.length > 0 ? (
+          {reports.length > 0 ? (
               reports.map((report) => (
                 <div key={report.id} className="shm-card group">
                   <div className="w-12 h-12 shm-gradient text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-primary/10 group-hover:scale-110 transition-transform">
@@ -194,36 +154,6 @@ export default function Reports() {
               <div className="col-span-full text-center py-24 bg-white border-2 border-dashed border-gray-100 rounded-[3rem]">
                 <p className="text-gray-300 font-black uppercase tracking-[0.2em]">لا توجد تقارير متاحة حالياً</p>
               </div>
-            )
-          ) : (
-            sessions.length > 0 ? (
-              sessions.map((session) => (
-                <div key={session.id} className="shm-card group">
-                   <div className="w-12 h-12 shm-gradient text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-primary/10 group-hover:scale-110 transition-transform">
-                    <span className="text-xl">📝</span>
-                  </div>
-                  <h3 className="font-black text-xl mb-3 text-gray-800 uppercase tracking-tight line-clamp-2 min-h-[3.5rem]">
-                    {session.title}
-                  </h3>
-                  <div className="text-sm text-gray-400 font-bold space-y-2 mb-6 border-t border-gray-50 pt-4">
-                    <p className="flex items-center gap-2">📍 {session.location}</p>
-                    <p className="flex items-center gap-2">🕒 {new Date(session.date_time).toLocaleString("ar-MA")}</p>
-                    <p className="flex items-center gap-2">📅 {new Date(session.created_at).toLocaleDateString("ar-MA")}</p>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                    <p className="text-xs font-bold text-blue-700 text-right">
-                      <span className="block font-black mb-2">📋 التفاصيل</span>
-                      <span className="block text-[10px] text-blue-600 mb-3">الهدف: {session.objective}</span>
-                      <span className="block text-[10px] text-blue-600">الفئة المستهدفة: {session.target_audience}</span>
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-24 bg-white border-2 border-dashed border-gray-100 rounded-[3rem]">
-                <p className="text-gray-300 font-black uppercase tracking-[0.2em]">لا توجد حصص متاحة حالياً</p>
-              </div>
-            )
           )}
         </div>
       )}

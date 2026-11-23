@@ -1,6 +1,21 @@
 import { RequestHandler } from "express";
 import { supabaseAdmin } from "../lib/supabase";
 
+export const handleListReportCatalog: RequestHandler = async (_req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from("reports")
+    .select("id, title, location, time, pdf_url, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Report catalog error:", error);
+    res.status(500).json({ error: error.message, code: error.code });
+    return;
+  }
+
+  res.json({ reports: data || [] });
+};
+
 export const handleListReports: RequestHandler = async (_req, res) => {
   const [reportsResult, sessionsResult] = await Promise.all([
     supabaseAdmin.from("reports").select("*").order("created_at", { ascending: false }),

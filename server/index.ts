@@ -4,7 +4,7 @@ import cors from "cors";
 import { timingSafeEqual } from "node:crypto";
 import { handleGenerateSession } from "./routes/generate-session";
 import { handleSaveReport } from "./routes/save-report";
-import { handleListReports } from "./routes/list-reports";
+import { handleListReportCatalog, handleListReports } from "./routes/list-reports";
 import authRoutes from "./routes/auth";
 import { consume, getClientIp } from "./lib/rateLimit";
 import { requireRapportAuth } from "./lib/auth";
@@ -99,7 +99,7 @@ export function createServer() {
   app.post("/api/generate-session", requireApiKey, handleGenerateSession);
   app.post("/api/save-report", requireApiKey, handleSaveReport);
   app.get("/api/reports", requireApiKey, handleListReports);
-  app.get("/api/report-catalog", requireRapportAuth, handleListReports);
+  app.get("/api/report-catalog", requireRapportAuth, handleListReportCatalog);
 
   return app;
 }
