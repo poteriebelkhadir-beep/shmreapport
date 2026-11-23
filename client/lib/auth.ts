@@ -1,9 +1,8 @@
 /**
  * Session du portail Rapports.
  *
- * La connexion est vérifiée par NOTRE serveur (`POST /api/auth/login`) contre
- * la table Supabase `rapport_users`. Le navigateur ne stocke qu'un jeton JWT
- * signé, jamais de mot de passe ni de comparaison de PIN dans le code.
+ * La connexion est vérifiée par notre serveur à partir des variables
+ * d’environnement. Le navigateur ne stocke qu'un jeton JWT signé.
  *
  * Durée de session : 30 jours, conservée dans localStorage (web) et dans la
  * WebView (APK) — la session survit donc à la fermeture de l'application.

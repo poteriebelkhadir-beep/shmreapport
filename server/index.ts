@@ -75,7 +75,7 @@ export function createServer() {
     next();
   });
 
-  // Connexion réelle (table Supabase `rapport_users`, voir supabase/AUTH.sql).
+  // Authentification par variables d’environnement.
   app.use("/api/auth", authRoutes);
 
   // Example API routes

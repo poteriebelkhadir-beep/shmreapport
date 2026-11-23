@@ -40,8 +40,7 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // Vérification réelle côté serveur (table Supabase `rapport_users`) :
-      // plus aucun identifiant n'est comparé dans le navigateur.
+      // Vérification des identifiants uniquement côté serveur.
       const result = await login({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
