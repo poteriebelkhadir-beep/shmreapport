@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
+import DocumentGenerator from "./pages/DocumentGenerator";
 import AddReport from "./pages/AddReport";
 import ReportSuccess from "./pages/ReportSuccess";
 import AddSession from "./pages/AddSession";
@@ -59,6 +60,7 @@ const App = () => {
               {/* Protected Routes */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><DocumentGenerator /></ProtectedRoute>} />
               <Route path="/add-report" element={<ProtectedRoute><AddReport /></ProtectedRoute>} />
               <Route path="/report-success" element={<ProtectedRoute><ReportSuccess /></ProtectedRoute>} />
               <Route path="/add-session" element={<ProtectedRoute><AddSession /></ProtectedRoute>} />

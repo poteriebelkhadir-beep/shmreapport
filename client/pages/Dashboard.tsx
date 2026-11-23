@@ -17,7 +17,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl px-6">
           <button
             onClick={() => navigate("/add-report")}
             className="flex-1 shm-card group hover:-translate-y-2 !p-5"
@@ -30,14 +30,25 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate("/documents")}
+            className="shm-card group hover:-translate-y-2 !p-5 text-right"
+          >
+            <div className="w-12 h-12 shm-gradient text-white rounded-xl flex items-center justify-center mb-4 shadow-md shadow-primary/20 group-hover:scale-110 transition-transform">
+              <span className="text-2xl">📝</span>
+            </div>
+            <h3 className="text-2xl font-black text-gray-800 mb-2">المستندات</h3>
+            <p className="text-gray-400 text-sm font-medium">إنشاء وطباعة مستندات PDF</p>
+          </button>
+
+          <button
             onClick={() => navigate("/reports")}
-            className="flex-1 shm-card group hover:-translate-y-2 bg-gray-50 border-gray-100 !p-5"
+            className="shm-card group hover:-translate-y-2 bg-gray-50 border-gray-100 !p-5 text-right"
           >
             <div className="w-12 h-12 bg-white border border-gray-100 text-gray-800 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
               <span className="text-2xl">📂</span>
             </div>
-            <h3 className="text-2xl font-black text-gray-800 mb-2">الوثائق</h3>
-            <p className="text-gray-400 text-sm font-medium">عرض و تحميل الملفات</p>
+            <h3 className="text-2xl font-black text-gray-800 mb-2">السجل</h3>
+            <p className="text-gray-400 text-sm font-medium">التقارير والحصص السابقة</p>
           </button>
         </div>
 
