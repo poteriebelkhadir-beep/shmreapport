@@ -7,6 +7,7 @@ import { handleSaveReport } from "./routes/save-report";
 import { handleListReports } from "./routes/list-reports";
 import authRoutes from "./routes/auth";
 import { consume, getClientIp } from "./lib/rateLimit";
+import { requireRapportAuth } from "./lib/auth";
 
 const APP_ORIGINS = ["capacitor://localhost", "https://localhost", "http://localhost"];
 
@@ -98,6 +99,7 @@ export function createServer() {
   app.post("/api/generate-session", requireApiKey, handleGenerateSession);
   app.post("/api/save-report", requireApiKey, handleSaveReport);
   app.get("/api/reports", requireApiKey, handleListReports);
+  app.get("/api/report-catalog", requireRapportAuth, handleListReports);
 
   return app;
 }

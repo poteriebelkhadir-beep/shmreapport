@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import { supabase } from "@/lib/supabase";
+import { API_BASE, getAuthHeaders } from "@/lib/auth";
 
 interface Report {
   id: string;
@@ -68,42 +68,18 @@ export default function Reports() {
       setLoading(true);
       setDebugError(null);
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const response = await fetch(`${API_BASE}/api/report-catalog`, {
+          headers: getAuthHeaders(),
+        });
 
-        if (!supabaseUrl || !supabaseKey) {
-          const cached = readCache();
-          if (cached) {
-            setReports(cached.reports);
-            setSessions(cached.sessions);
-            setCacheInfo({ savedAt: cached.savedAt });
-          } else {
-            setDebugError(
-              `Variables manquantes: URL=${supabaseUrl ? "OK" : "VIDE"}, KEY=${supabaseKey ? "OK" : "VIDE"}`,
-            );
-          }
-          setLoading(false);
-          return;
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(body?.error || `Erreur de chargement des documents (${response.status}).`);
         }
 
-        // Requêtes directes à Supabase (clé anon) au lieu de passer
-        // par un serveur Express, qui n'existe pas dans l'APK.
-        const [reportsResult, sessionsResult] = await Promise.all([
-          supabase.from("reports").select("*").order("created_at", { ascending: false }),
-          supabase.from("sessions").select("*").order("created_at", { ascending: false }),
-        ]);
-
-        if (reportsResult.error) {
-          setDebugError(`Erreur reports: ${JSON.stringify(reportsResult.error)}`);
-          throw reportsResult.error;
-        }
-        if (sessionsResult.error) {
-          setDebugError(`Erreur sessions: ${JSON.stringify(sessionsResult.error)}`);
-          throw sessionsResult.error;
-        }
-
-        const freshReports = (reportsResult.data || []) as Report[];
-        const freshSessions = (sessionsResult.data || []) as Session[];
+        const data = (await response.json()) as { reports: Report[]; sessions: Session[] };
+        const freshReports = data.reports || [];
+        const freshSessions = data.sessions || [];
         setReports(freshReports);
         setSessions(freshSessions);
         setCacheInfo(null);
