@@ -162,6 +162,14 @@ export const handleGenerateRapport: RequestHandler = async (req, res) => {
         res.status(429).json({ error: "Le service CREAO limite actuellement les demandes. Réessayez plus tard." });
         return;
       }
+      if (upstream.status === 404) {
+        res.status(502).json({ error: "L’agent CREAO est introuvable dans le projet associé à cette clé. Vérifiez que l’agent et la clé Project appartiennent au même projet." });
+        return;
+      }
+      if (upstream.status === 401) {
+        res.status(502).json({ error: "La clé Project CREAO n’est pas autorisée pour cette API." });
+        return;
+      }
       console.error("CREAO run creation failed:", upstream.status, data?.error);
       res.status(502).json({ error: "Le service CREAO n’a pas pu démarrer la génération." });
       return;
