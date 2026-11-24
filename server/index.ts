@@ -6,7 +6,7 @@ import { handleGenerateSession } from "./routes/generate-session";
 import { handleSaveReport } from "./routes/save-report";
 import { handleListReportCatalog, handleListReports } from "./routes/list-reports";
 import { handleGenerateRapport, handleGetRapport } from "./routes/generate-rapport";
-import { handleCreateDocument, handleDeleteDocument, handleListDocuments } from "./routes/documents";
+import { handleCreateDocument, handleDeleteDocument, handleListDocuments, handleUpdateDocumentCategory } from "./routes/documents";
 import authRoutes from "./routes/auth";
 import { consume, getClientIp } from "./lib/rateLimit";
 import { requireRapportAuth } from "./lib/auth";
@@ -106,6 +106,7 @@ export function createServer() {
   app.get("/api/rapport/:jobId", requireRapportAuth, handleGetRapport);
   app.get("/api/documents", requireRapportAuth, handleListDocuments);
   app.post("/api/documents", requireRapportAuth, handleCreateDocument);
+  app.patch("/api/documents/:id", requireRapportAuth, handleUpdateDocumentCategory);
   app.delete("/api/documents/:id", requireRapportAuth, handleDeleteDocument);
 
   return app;

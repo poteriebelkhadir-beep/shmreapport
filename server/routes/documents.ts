@@ -96,6 +96,35 @@ export const handleCreateDocument: RequestHandler = async (req, res) => {
   res.status(201).json({ document: data });
 };
 
+export const handleUpdateDocumentCategory: RequestHandler = async (req, res) => {
+  const id = req.params.id as string;
+  const categoryCode = (req.body as { category_code?: unknown } | undefined)?.category_code;
+  if (!UUID_PATTERN.test(id) || typeof categoryCode !== "string" || !CATEGORY_CODE_PATTERN.test(categoryCode)) {
+    res.status(400).json({ error: "بيانات الفئة غير صالحة." });
+    return;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("generated_documents")
+    .update({ category_code: categoryCode })
+    .eq("id", id)
+    .eq("user_id", req.rapport_user!.sub)
+    .select(DOCUMENT_COLUMNS);
+
+  if (error) {
+    console.error("Document category update error:", error);
+    res.status(500).json({ error: "تعذر تحديث فئة المستند." });
+    return;
+  }
+
+  if (!data?.length) {
+    res.status(404).json({ error: "المستند غير موجود." });
+    return;
+  }
+
+  res.json({ document: data[0] });
+};
+
 export const handleDeleteDocument: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
   if (!UUID_PATTERN.test(id)) {

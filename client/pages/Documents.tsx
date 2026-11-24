@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import ListFiltersBar from "@/components/ListFiltersBar";
 import { downloadPdf } from "@/lib/pdfFile";
 import { buildDocumentBlocks, renderPdf, TEMPLATE_LABELS, type TemplateId } from "@/lib/documentRenderer";
-import { deleteDocument, listDocuments, type SavedDocument } from "@/lib/documentsApi";
-import { getDocumentCategory, resolveDocumentCategory } from "@/lib/documentCategories";
+import { deleteDocument, listDocuments, updateDocumentCategory, type SavedDocument } from "@/lib/documentsApi";
+import { DOCUMENT_CATEGORIES, getDocumentCategory, resolveDocumentHeader } from "@/lib/documentCategories";
+import { EMPTY_LIST_FILTERS, filterItems, type ListFilters } from "@/lib/listFilters";
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -14,7 +16,9 @@ export default function Documents() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [filters, setFilters] = useState<ListFilters>(EMPTY_LIST_FILTERS);
 
   useEffect(() => {
     listDocuments()
@@ -22,6 +26,8 @@ export default function Documents() {
       .catch((error) => setNotice(errorMessage(error)))
       .finally(() => setLoading(false));
   }, []);
+
+  const visibleDocs = useMemo(() => filterItems(docs, filters, (doc) => doc.name), [docs, filters]);
 
   const handleDelete = async (doc: SavedDocument) => {
     if (!window.confirm(`حذف المستند «${doc.name}» نهائيًا؟`)) return;
@@ -41,15 +47,27 @@ export default function Documents() {
     setExporting(doc.id);
     setNotice(null);
     try {
-      const category = getDocumentCategory(doc.category_code);
-      const resolvedCategory = category ? await resolveDocumentCategory(category) : null;
-      const { blocks } = buildDocumentBlocks(doc.template_type, doc.content.values, doc.content.rows, resolvedCategory);
+      const header = await resolveDocumentHeader(getDocumentCategory(doc.category_code));
+      const { blocks } = buildDocumentBlocks(doc.template_type, doc.content.values, doc.content.rows, header);
       setNotice(await downloadPdf(await renderPdf({ name: doc.name, pages: [blocks] })));
     } catch (error) {
       console.error("Erreur génération PDF:", error);
       setNotice(errorMessage(error));
     } finally {
       setExporting(null);
+    }
+  };
+
+  const handleAssignCategory = async (doc: SavedDocument, categoryCode: string) => {
+    setAssigning(doc.id);
+    setNotice(null);
+    try {
+      const updated = await updateDocumentCategory(doc.id, categoryCode);
+      setDocs((previous) => previous.map((item) => (item.id === doc.id ? updated : item)));
+    } catch (error) {
+      setNotice(errorMessage(error));
+    } finally {
+      setAssigning(null);
     }
   };
 
@@ -73,34 +91,63 @@ export default function Documents() {
         ) : docs.length === 0 ? (
           <p className="text-center text-gray-400 font-bold">لا توجد مستندات محفوظة.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {docs.map((doc) => (
-              <div key={doc.id} className="shm-card space-y-3">
-                <div>
-                  <p className="font-black text-gray-800">{doc.name}</p>
-                  <p className="mt-1 text-xs font-medium text-gray-400">
-                    {TEMPLATE_LABELS[doc.template_type as TemplateId] ?? doc.template_type} · {new Date(doc.created_at).toLocaleDateString("fr-FR")}
-                  </p>
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => handleRegenerate(doc)}
-                    disabled={exporting === doc.id}
-                    className="flex-1 rounded-xl shm-gradient py-2 text-xs font-black text-white disabled:opacity-50"
-                  >
-                    {exporting === doc.id ? "جاري التجهيز..." : "تحميل PDF"}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(doc)}
-                    disabled={deleting === doc.id}
-                    className="rounded-xl border border-red-200 px-3 py-2 text-xs font-black text-red-500 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    حذف
-                  </button>
-                </div>
+          <>
+            <ListFiltersBar value={filters} onChange={setFilters} />
+
+            {visibleDocs.length === 0 ? (
+              <p className="text-center text-gray-400 font-bold">لا توجد نتائج مطابقة للبحث أو الفلاتر.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {visibleDocs.map((doc) => {
+                  const category = getDocumentCategory(doc.category_code);
+                  return (
+                    <div key={doc.id} className="shm-card space-y-3">
+                      <div>
+                        <p className="font-black text-gray-800">{doc.name}</p>
+                        <p className="mt-1 text-xs font-medium text-gray-400">
+                          {TEMPLATE_LABELS[doc.template_type as TemplateId] ?? doc.template_type} · {new Date(doc.created_at).toLocaleDateString("fr-FR")}
+                        </p>
+                        {category ? (
+                          <p className="mt-2 flex items-center gap-2 text-xs font-bold text-gray-600">
+                            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: category.couleur }} />
+                            {category.nom_ar}
+                          </p>
+                        ) : (
+                          <select
+                            value=""
+                            disabled={assigning === doc.id}
+                            onChange={(event) => handleAssignCategory(doc, event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 outline-none"
+                          >
+                            <option value="">بدون فئة — اختر الفئة</option>
+                            {DOCUMENT_CATEGORIES.map((item) => (
+                              <option key={item.code} value={item.code}>{item.nom_ar}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleRegenerate(doc)}
+                          disabled={exporting === doc.id}
+                          className="flex-1 rounded-xl shm-gradient py-2 text-xs font-black text-white disabled:opacity-50"
+                        >
+                          {exporting === doc.id ? "جاري التجهيز..." : "تحميل PDF"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc)}
+                          disabled={deleting === doc.id}
+                          className="rounded-xl border border-red-200 px-3 py-2 text-xs font-black text-red-500 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          حذف
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </Layout>

@@ -140,6 +140,7 @@ class SyncManager {
         leaders_count: form.leaders_count ?? 0,
         category: form.category ?? null,
         beneficiary: form.beneficiary ?? null,
+        category_code: form.category_code ?? null,
         description_original: form.description_original ?? null,
         description_reformulated: form.description_reformulated ?? null,
         evaluation_positive: form.evaluation_positive ?? null,

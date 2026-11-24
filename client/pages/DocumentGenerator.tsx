@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { downloadPdf } from "@/lib/pdfFile";
 import { buildDocumentBlocks, renderPdf, type TemplateId } from "@/lib/documentRenderer";
 import { createDocument } from "@/lib/documentsApi";
-import { resolveDocumentCategory } from "@/lib/documentCategories";
+import { resolveDocumentHeader } from "@/lib/documentCategories";
 import { useDocumentCategory } from "@/contexts/DocumentCategoryContext";
 import DocumentCategoryPicker from "@/components/DocumentCategoryPicker";
 
@@ -69,8 +69,8 @@ export default function DocumentGenerator() {
     setIsExporting(true);
     setNotice(null);
     try {
-      const resolvedCategory = await resolveDocumentCategory(category);
-      const { name, blocks } = buildDocumentBlocks(template, values, rows, resolvedCategory);
+      const header = await resolveDocumentHeader(category);
+      const { name, blocks } = buildDocumentBlocks(template, values, rows, header);
       const pdf = await renderPdf({ name, pages: [blocks] });
       await createDocument({ template_type: template, name, content: { values, rows }, category_code: category.code, pdf });
       setNotice(await downloadPdf(pdf));

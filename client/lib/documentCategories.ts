@@ -7,7 +7,10 @@ export interface DocumentCategory {
   slogan: string;
 }
 
-export const PLACEHOLDER_LOGO = "/placeholder.svg";
+export interface DocumentHeaderData {
+  category: DocumentCategory | null;
+  categoryLogoSrc: string | null;
+}
 
 export const DOCUMENT_CATEGORIES: DocumentCategory[] = [
   { code: "baraim", nom_ar: "براعم", nom_fr: "Brâaim", couleur: "#FFCC14", logo_url: "/assets/logos/baraim.png", slogan: "البرعم مرح" },
@@ -24,15 +27,15 @@ export const DOCUMENT_CATEGORIES: DocumentCategory[] = [
 export const getDocumentCategory = (code: string | null | undefined) =>
   DOCUMENT_CATEGORIES.find((category) => category.code === code) ?? null;
 
-export function resolveLogoUrl(url: string): Promise<string> {
+export function resolveLogoUrl(url: string): Promise<string | null> {
   return new Promise((resolve) => {
     const probe = new Image();
     probe.onload = () => resolve(url);
-    probe.onerror = () => resolve(PLACEHOLDER_LOGO);
+    probe.onerror = () => resolve(null);
     probe.src = url;
   });
 }
 
-export async function resolveDocumentCategory(category: DocumentCategory): Promise<DocumentCategory> {
-  return { ...category, logo_url: await resolveLogoUrl(category.logo_url) };
+export async function resolveDocumentHeader(category: DocumentCategory | null): Promise<DocumentHeaderData> {
+  return { category, categoryLogoSrc: category ? await resolveLogoUrl(category.logo_url) : null };
 }

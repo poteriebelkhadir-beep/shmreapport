@@ -1,4 +1,5 @@
-import { DOCUMENT_CATEGORIES, PLACEHOLDER_LOGO, type DocumentCategory } from "@/lib/documentCategories";
+import { useState } from "react";
+import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/documentCategories";
 
 const isDarkColor = (hex: string) => {
   const value = parseInt(hex.slice(1), 16);
@@ -8,6 +9,17 @@ const isDarkColor = (hex: string) => {
   return 0.299 * red + 0.587 * green + 0.114 * blue < 150;
 };
 
+function CategoryLogo({ category }: { category: DocumentCategory }) {
+  const [failed, setFailed] = useState(false);
+  const className = "h-14 w-14 shrink-0 rounded-full bg-white/80 object-contain p-1";
+
+  if (failed) {
+    return <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gray-200 text-xl font-black text-gray-700">{category.nom_fr.charAt(0).toUpperCase()}</span>;
+  }
+
+  return <img src={category.logo_url} alt={category.nom_fr} onError={() => setFailed(true)} className={className} />;
+}
+
 function CategoryCard({ category, onSelect }: { category: DocumentCategory; onSelect: (code: string) => void }) {
   return (
     <button type="button" onClick={() => onSelect(category.code)} className="shm-card overflow-hidden p-0 text-right transition hover:-translate-y-0.5">
@@ -15,15 +27,7 @@ function CategoryCard({ category, onSelect }: { category: DocumentCategory; onSe
         className="flex items-center gap-4 px-5 py-4"
         style={{ backgroundColor: category.couleur, color: isDarkColor(category.couleur) ? "#ffffff" : "#1f2937" }}
       >
-        <img
-          src={category.logo_url}
-          alt={category.nom_fr}
-          onError={(event) => {
-            event.currentTarget.onerror = null;
-            event.currentTarget.src = PLACEHOLDER_LOGO;
-          }}
-          className="h-14 w-14 shrink-0 rounded-full bg-white/80 object-contain p-1"
-        />
+        <CategoryLogo category={category} />
         <span className="text-xl font-black">{category.nom_ar}</span>
       </div>
       <div className="flex items-center justify-between px-5 py-3 text-sm font-bold text-gray-600">

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -7,12 +7,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, Download, Home, Copy, Check, Share2, FileDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { downloadPdf, sharePdf } from "@/lib/pdfFile";
-
-type Logo = string;
+import { DocumentHeader } from "@/components/DocumentHeader";
+import { getDocumentCategory, resolveDocumentHeader, type DocumentHeaderData } from "@/lib/documentCategories";
 
 type ReportState = {
   title?: string;
-  logos?: Logo[];
   report?: Record<string, unknown>;
   supabaseId?: string;
 };
@@ -47,7 +46,18 @@ export default function ReportSuccess() {
   const state = (location.state as ReportState) || {};
   const report = state.report || {};
   const title = state.title || valueOf(report, "title");
-  const logos = state.logos || [];
+  const categoryCode = typeof report.category_code === "string" ? report.category_code : null;
+  const [header, setHeader] = useState<DocumentHeaderData>({ category: null, categoryLogoSrc: null });
+
+  useEffect(() => {
+    let active = true;
+    resolveDocumentHeader(getDocumentCategory(categoryCode)).then((resolved) => {
+      if (active) setHeader(resolved);
+    });
+    return () => {
+      active = false;
+    };
+  }, [categoryCode]);
 
   const generatePdfBlob = async (): Promise<Blob | null> => {
     if (!reportRef.current) return null;
@@ -259,22 +269,13 @@ export default function ReportSuccess() {
 
         <div ref={reportRef} dir="rtl" className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-8">
           <article className="mx-auto max-w-4xl overflow-hidden bg-white" style={{ pageBreakInside: "avoid" }}>
-            <header className="px-6 py-6 text-center text-slate-900 sm:px-12">
-              <div className="mb-5 h-1 bg-[#8B0000]" />
-              <div className="flex items-center justify-center gap-5">
-                {logos[0] ? <img src={logos[0]} alt="الشعار الأيمن" className="h-20 w-20 object-contain" /> : <div className="h-20 w-20" />}
-                <div className="min-w-0 flex-1 text-center leading-8">
-                  <p className="text-xl font-black">الكشفية الحسنية المغربية</p>
-                  <p className="text-base">فرع آسفي مجموعة الأمل</p>
-                  <p className="text-base">فوج عمر الفاروق</p>
-                </div>
-                {logos[1] ? <img src={logos[1]} alt="الشعار الأيسر" className="h-20 w-20 object-contain" /> : <div className="h-20 w-20" />}
-              </div>
-              <div className="mt-5 h-1 bg-[#8B0000]" />
-              <h2 className="mt-7 text-2xl font-black">تقرير حول: {title}</h2>
-            </header>
+            <div className="px-6 pt-4 sm:px-12">
+              <DocumentHeader category={header.category} categoryLogoSrc={header.categoryLogoSrc} />
+            </div>
 
-            <div className="px-6 pb-8 sm:px-12">
+            <h2 className="px-6 pt-6 text-center text-2xl font-black text-slate-900 sm:px-12">تقرير حول: {title}</h2>
+
+            <div className="px-6 pb-8 pt-6 sm:px-12">
               <div className="overflow-hidden border border-[#d8c9a9]" style={{ pageBreakInside: "avoid" }}>
                 <table className="w-full table-auto border-collapse text-right">
                   <tbody>

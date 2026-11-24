@@ -45,6 +45,14 @@ export async function createDocument(
   });
 }
 
+export async function updateDocumentCategory(id: string, categoryCode: string): Promise<SavedDocument> {
+  const body = await request<{ document: SavedDocument }>(`/api/documents/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ category_code: categoryCode }),
+  });
+  return body.document;
+}
+
 export async function deleteDocument(id: string): Promise<void> {
   await request(`/api/documents/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

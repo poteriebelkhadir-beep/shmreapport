@@ -1,6 +1,9 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import type { DocumentCategory } from "@/lib/documentCategories";
+import { DocumentHeader } from "@/components/DocumentHeader";
+import type { DocumentHeaderData } from "@/lib/documentCategories";
 
 export type TemplateId = "hierarchy" | "technical" | "proposals" | "custom";
 
@@ -16,7 +19,7 @@ export type PrintBlock =
   | { kind: "text"; text: string }
   | { kind: "keyvalue"; rows: [string, string][] }
   | { kind: "table"; columns: string[]; rows: string[][] }
-  | { kind: "categoryHeader"; category: DocumentCategory };
+  | ({ kind: "header" } & DocumentHeaderData);
 
 export interface PrintDocument {
   name: string;
@@ -32,9 +35,14 @@ const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[character] || character);
 
 function renderBlock(block: PrintBlock): string {
-  if (block.kind === "categoryHeader") {
-    const { category } = block;
-    return `<div class="category"><img src="${escapeHtml(`${window.location.origin}${category.logo_url}`)}" alt=""><div class="category-names"><p class="category-ar">${escapeHtml(category.nom_ar)}</p><p class="category-fr">${escapeHtml(category.nom_fr)}</p>${category.slogan ? `<p class="category-slogan">${escapeHtml(category.slogan)}</p>` : ""}</div></div><div class="category-bar" style="background:${escapeHtml(category.couleur)}"></div>`;
+  if (block.kind === "header") {
+    return renderToStaticMarkup(
+      createElement(DocumentHeader, {
+        category: block.category,
+        categoryLogoSrc: block.categoryLogoSrc,
+        baseUrl: window.location.origin,
+      }),
+    );
   }
   if (block.kind === "heading") {
     const tag = block.level === 1 ? "h2" : "h3";
@@ -53,8 +61,8 @@ function renderBlock(block: PrintBlock): string {
 
 function buildHtml(documentData: PrintDocument) {
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escapeHtml(documentData.name)}</title><style>
-    @page{size:A4;margin:0}*{box-sizing:border-box}body{width:794px;margin:0 auto;padding:38px 72px;color:#243024;font-family:Tahoma,Arial,sans-serif;font-size:14px}.bar{height:4px;background:#8b0000}.header{display:flex;align-items:center;gap:18px;margin:14px 0}.header img{width:76px;height:76px;object-fit:contain}.brand{flex:1;text-align:center;line-height:1.7}.brand p{margin:0}.brand p:first-child{font-weight:700}.sheet{min-height:1040px;page-break-after:always}.sheet:last-child{page-break-after:auto}h2{text-align:center;font-size:23px;margin:24px 0 12px}h3{font-size:16px;color:#624b2b;margin:20px 0 8px}p{line-height:1.9;white-space:pre-wrap;margin:10px 0}table{width:100%;border-collapse:collapse;margin:12px 0 18px}th,td{border:1px solid #d8c9a9;padding:10px 12px;text-align:right;vertical-align:top;line-height:1.7}th{background:#f5e6c8;color:#5f4a2b}.keyvalue th{width:34%}.category{display:flex;align-items:center;gap:18px;margin:6px 0 0}.category img{width:84px;height:84px;object-fit:contain}.category-names{flex:1;text-align:center;line-height:1.6}.category-names p{margin:0}.category-ar{font-size:22px;font-weight:700}.category-fr{font-size:12px;color:#64748b}.category-slogan{font-weight:700;color:#624b2b}.category-bar{height:6px;border-radius:3px;margin:10px 0 4px}.footer{border-top:1px solid #e2e8f0;margin-top:30px;padding-top:12px;text-align:center;color:#8993a1;font-size:11px}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
-    </style></head><body><section class="sheet"><div class="bar"></div><header class="header"><img src="${escapeHtml(`${window.location.origin}/shm-logo.png`)}" alt="شعار SHM"><div class="brand"><p>بسم الله الرحمن الرحيم</p><p>الكشفية الحسنية المغربية</p><p>فوج عمر الفاروق</p></div></header><div class="bar"></div>${documentData.pages[0].map(renderBlock).join("")}<footer class="footer">تم إنشاء هذا المستند بواسطة نظام إدارة التقارير · ${new Date().toLocaleDateString("fr-FR")}</footer></section></body></html>`;
+    @page{size:A4;margin:0}*{box-sizing:border-box}body{width:794px;margin:0 auto;padding:38px 72px;color:#243024;font-family:Tahoma,Arial,sans-serif;font-size:14px}.sheet{min-height:1040px;page-break-after:always}.sheet:last-child{page-break-after:auto}h2{text-align:center;font-size:23px;margin:24px 0 12px}h3{font-size:16px;color:#624b2b;margin:20px 0 8px}p{line-height:1.9;white-space:pre-wrap;margin:10px 0}table{width:100%;border-collapse:collapse;margin:12px 0 18px}th,td{border:1px solid #d8c9a9;padding:10px 12px;text-align:right;vertical-align:top;line-height:1.7}th{background:#f5e6c8;color:#5f4a2b}.keyvalue th{width:34%}.footer{border-top:1px solid #e2e8f0;margin-top:30px;padding-top:12px;text-align:center;color:#8993a1;font-size:11px}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+    </style></head><body><section class="sheet">${documentData.pages[0].map(renderBlock).join("")}<footer class="footer">تم إنشاء هذا المستند بواسطة نظام إدارة التقارير · ${new Date().toLocaleDateString("fr-FR")}</footer></section></body></html>`;
 }
 
 export async function renderPdf(documentData: PrintDocument): Promise<Blob> {
@@ -106,7 +114,7 @@ export function buildDocumentBlocks(
   template: TemplateId,
   values: Record<string, string>,
   rows: string[][],
-  category: DocumentCategory | null,
+  header: DocumentHeaderData,
 ) {
   const value = (key: string) => values[key]?.trim() || "—";
   let name = "مستند فوج عمر الفاروق";
@@ -158,5 +166,5 @@ export function buildDocumentBlocks(
     ];
   }
 
-  return { name, blocks: category ? [{ kind: "categoryHeader", category } as PrintBlock, ...blocks] : blocks };
+  return { name, blocks: [{ kind: "header", ...header } as PrintBlock, ...blocks] };
 }
