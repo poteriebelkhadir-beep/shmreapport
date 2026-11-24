@@ -65,7 +65,7 @@ export default function DocumentGenerator() {
     setNotice(null);
     try {
       const pdf = await renderPdf({ name, pages: [blocks] });
-      await createDocument({ template_type: template, name, content: { values, rows } });
+      await createDocument({ template_type: template, name, content: { values, rows }, pdf });
       setNotice(await downloadPdf(pdf));
     } catch (error) {
       console.error("Erreur génération PDF:", error);

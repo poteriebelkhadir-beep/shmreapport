@@ -1,11 +1,13 @@
 import { API_BASE, getAuthHeaders } from "@/lib/auth";
 import type { DocumentContent, TemplateId } from "@/lib/documentRenderer";
+import { blobToBase64 } from "@/lib/pdfFile";
 
 export interface SavedDocument {
   id: string;
   template_type: TemplateId;
   name: string;
   content: DocumentContent;
+  url: string | null;
   created_at: string;
 }
 
@@ -26,8 +28,14 @@ export async function listDocuments(): Promise<SavedDocument[]> {
   return body.documents;
 }
 
-export async function createDocument(document: Pick<SavedDocument, "template_type" | "name" | "content">): Promise<void> {
-  await request("/api/documents", { method: "POST", body: JSON.stringify(document) });
+export async function createDocument(
+  document: Pick<SavedDocument, "template_type" | "name" | "content"> & { pdf: Blob },
+): Promise<void> {
+  const pdf = await blobToBase64(document.pdf);
+  await request("/api/documents", {
+    method: "POST",
+    body: JSON.stringify({ template_type: document.template_type, name: document.name, content: document.content, pdf }),
+  });
 }
 
 export async function deleteDocument(id: string): Promise<void> {
