@@ -108,7 +108,16 @@ export function buildDocumentBlocks(template: TemplateId, values: Record<string,
       { kind: "heading", text: "معلومات الدورية", level: 2 },
       { kind: "keyvalue", rows: [["اسم الدورية", value("patrolName")], ["عدد الأفراد", value("memberCount")], ["الصيحة", value("cry")]] },
       { kind: "heading", text: "هيكلة الأفراد", level: 2 },
-      { kind: "table", columns: ["المهمة", "الاسم"], rows: ["الرائد", "الكاتب", "مراقب الزي", "أمين المال", "المساعد"].map((role, index) => [role, value(`role-${index}`)]) },
+      {
+        kind: "table",
+        columns: ["المهمة", "الاسم"],
+        rows: [
+          ["الرائد", value("leader")],
+          ["الكاتب", value("writer")],
+          ["المساعد", value("assistant")],
+          ...rows.filter((row) => row[0]).map((row) => [row[0], row[1]?.trim() || "—"]),
+        ],
+      },
     ];
   } else if (template === "technical") {
     name = `بطاقة تقنية ${value("patrolName")}`;

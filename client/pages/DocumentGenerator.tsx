@@ -12,6 +12,8 @@ const templates: { id: TemplateId; label: string; description: string; icon: str
   { id: "custom", label: "نموذج حر", description: "إنشاء مستند مخصص", icon: "📝" },
 ];
 
+const MEMBER_ROLES = ["مراقب الزي", "أمين المال", "مسؤول التموين", "مسؤول الإعلام", "مسؤول النشاط"];
+
 export default function DocumentGenerator() {
   const navigate = useNavigate();
   const [template, setTemplate] = useState<TemplateId | null>(null);
@@ -30,7 +32,7 @@ export default function DocumentGenerator() {
   const chooseTemplate = (id: TemplateId) => {
     setTemplate(id);
     setValues({});
-    setRows([["", "", ...(id === "proposals" ? [""] : [])]]);
+    setRows(id === "hierarchy" ? [] : [["", "", ...(id === "proposals" ? [""] : [])]]);
   };
 
   const input = (key: string, label: string, placeholder = "") => (
@@ -108,7 +110,7 @@ export default function DocumentGenerator() {
             {template === "hierarchy" && (
               <>
                 <section className="shm-card space-y-4"><h2 className="text-lg font-black text-gray-800">معلومات الدورية</h2>{input("patrolName", "اسم الدورية")}{input("memberCount", "عدد الأفراد")}{input("cry", "الصيحة")}</section>
-                <section className="shm-card space-y-4"><h2 className="text-lg font-black text-gray-800">هيكلة الأفراد</h2>{["الرائد", "الكاتب", "مراقب الزي", "أمين المال", "المساعد"].map((role, index) => input(`role-${index}`, role))}</section>
+                <section className="shm-card space-y-4"><h2 className="text-lg font-black text-gray-800">هيكلة الأفراد</h2>{input("leader", "الرائد")}{input("writer", "الكاتب")}{input("assistant", "المساعد")}{rows.map((row, rowIndex) => <div key={rowIndex} className="grid gap-3 sm:grid-cols-[1fr_2fr_auto]"><select value={row[0]} onChange={(event) => setRowValue(rowIndex, 0, event.target.value)} className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-primary"><option value="">اختر الدور</option>{MEMBER_ROLES.filter((role) => role === row[0] || !rows.some((other) => other[0] === role)).map((role) => <option key={role} value={role}>{role}</option>)}</select><input value={row[1]} placeholder="الاسم" onChange={(event) => setRowValue(rowIndex, 1, event.target.value)} className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-primary" /><button type="button" onClick={() => setRows((current) => current.filter((_, index) => index !== rowIndex))} className="rounded-xl border border-gray-200 px-3 font-bold text-gray-500">حذف</button></div>)}<button type="button" disabled={rows.length >= MEMBER_ROLES.length} onClick={() => setRows((current) => [...current, ["", ""]])} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600 disabled:opacity-50">+ إضافة فرد</button></section>
               </>
             )}
             {template === "technical" && (
