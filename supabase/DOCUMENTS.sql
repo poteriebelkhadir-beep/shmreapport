@@ -4,7 +4,7 @@
 -- Comme rapport_users, cette table n'est accessible que par le serveur
 -- (clé service_role). Aucune policy RLS : la clé anon ne peut rien lire.
 
-create table if not exists public.documents (
+create table if not exists public.generated_documents (
   id            uuid primary key default gen_random_uuid(),
   user_id       text        not null,
   template_type text        not null
@@ -14,8 +14,8 @@ create table if not exists public.documents (
   created_at    timestamptz not null default now()
 );
 
-create index if not exists documents_user_created_idx
-  on public.documents (user_id, created_at desc);
+create index if not exists generated_documents_user_created_idx
+  on public.generated_documents (user_id, created_at desc);
 
-alter table public.documents enable row level security;
+alter table public.generated_documents enable row level security;
 -- Volontairement AUCUNE policy : accès réservé au service_role (serveur).

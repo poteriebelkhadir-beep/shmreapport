@@ -18,7 +18,7 @@ const isStringGrid = (value: unknown): value is string[][] =>
 
 export const handleListDocuments: RequestHandler = async (req, res) => {
   const { data, error } = await supabaseAdmin
-    .from("documents")
+    .from("generated_documents")
     .select(DOCUMENT_COLUMNS)
     .eq("user_id", req.rapport_user!.sub)
     .order("created_at", { ascending: false });
@@ -50,7 +50,7 @@ export const handleCreateDocument: RequestHandler = async (req, res) => {
   }
 
   const { data, error } = await supabaseAdmin
-    .from("documents")
+    .from("generated_documents")
     .insert({
       user_id: req.rapport_user!.sub,
       template_type: templateType,
@@ -77,7 +77,7 @@ export const handleDeleteDocument: RequestHandler = async (req, res) => {
   }
 
   const { data, error } = await supabaseAdmin
-    .from("documents")
+    .from("generated_documents")
     .delete()
     .eq("id", id)
     .eq("user_id", req.rapport_user!.sub)
