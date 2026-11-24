@@ -18,6 +18,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import SequenceReport from "./pages/SequenceReport";
+import Documents from "./pages/Documents";
 import DocumentGenerator from "./pages/DocumentGenerator";
 import AddReport from "./pages/AddReport";
 import ReportSuccess from "./pages/ReportSuccess";
@@ -62,7 +63,8 @@ const App = () => {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/reports/sequence" element={<ProtectedRoute><SequenceReport /></ProtectedRoute>} />
-              <Route path="/documents" element={<ProtectedRoute><DocumentGenerator /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/documents/new" element={<ProtectedRoute><DocumentGenerator /></ProtectedRoute>} />
               <Route path="/add-report" element={<ProtectedRoute><AddReport /></ProtectedRoute>} />
               <Route path="/report-success" element={<ProtectedRoute><ReportSuccess /></ProtectedRoute>} />
               <Route path="/add-session" element={<ProtectedRoute><AddSession /></ProtectedRoute>} />
