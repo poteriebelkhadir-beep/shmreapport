@@ -117,7 +117,7 @@ export function buildDocumentBlocks(template: TemplateId, values: Record<string,
       { kind: "heading", text: "تقديم الدورية", level: 2 },
       { kind: "keyvalue", rows: [["اسم الدورية", value("patrolName")], ["رائد الدورية", value("leaderName")], ["معدّ البطاقة التقنية", value("authorName")]] },
       { kind: "heading", text: "معلومات النشاط", level: 2 },
-      { kind: "keyvalue", rows: [["النشاط", value("activity")], ["الهدف من النشاط", value("goal")], ["شعار النشاط", value("slogan")], ["التاريخ", value("date")], ["المكان", value("place")], ["الفئة المنظمة", value("organizingCategory")], ["المكلف بالإعلام", value("mediaContact")], ["الفئة المستهدفة", value("targetAudience")], ["عدد المشاركين", value("participantCount")], ["الحاجيات", value("needs")]] },
+      { kind: "keyvalue", rows: [["النشاط", value("activity")], ["الهدف من النشاط", value("goal")], ["شعار النشاط", value("slogan")], ["التاريخ", value("date")], ["المكان", value("place")], ["الفئة المنظمة", value("organizingCategory")], ["المكلف بالإعلام", value("mediaContact")], ["الفئة المستهدفة", value("targetAudience")],["الحاجيات", value("needs")]] },
       ...(rows.some((row) => row.some((cell) => cell.trim())) ? [{ kind: "heading", text: "برنامج النشاط", level: 2 } as PrintBlock, { kind: "table", columns: ["التوقيت", "الفقرة"], rows: rows.filter((row) => row.some((cell) => cell.trim())) } as PrintBlock] : []),
     ];
   } else if (template === "proposals") {

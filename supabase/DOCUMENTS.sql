@@ -14,6 +14,9 @@ create table if not exists public.generated_documents (
   created_at    timestamptz not null default now()
 );
 
+-- Si la table existe déjà avec user_id de type uuid, la convertir en text.
+alter table public.generated_documents alter column user_id type text using user_id::text;
+
 create index if not exists generated_documents_user_created_idx
   on public.generated_documents (user_id, created_at desc);
 
