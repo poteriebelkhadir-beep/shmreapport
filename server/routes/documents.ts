@@ -5,7 +5,8 @@ import { supabaseAdmin } from "../lib/supabase";
 const TEMPLATE_IDS = ["hierarchy", "technical", "proposals", "custom"];
 const MAX_NAME_LENGTH = 200;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DOCUMENT_COLUMNS = "id, template_type, name, content, url, created_at";
+const DOCUMENT_COLUMNS = "id, template_type, name, content, category_code, url, created_at";
+const CATEGORY_CODE_PATTERN = /^[a-z-]{1,40}$/;
 const STORAGE_BUCKET = "generated-documents";
 
 const storagePath = (id: string) => `${id}.pdf`;
@@ -37,8 +38,9 @@ export const handleListDocuments: RequestHandler = async (req, res) => {
 };
 
 export const handleCreateDocument: RequestHandler = async (req, res) => {
-  const body = (req.body ?? {}) as { template_type?: unknown; name?: unknown; content?: unknown; pdf?: unknown };
+  const body = (req.body ?? {}) as { template_type?: unknown; name?: unknown; content?: unknown; category_code?: unknown; pdf?: unknown };
   const templateType = body.template_type;
+  const categoryCode = body.category_code ?? null;
   const name = typeof body.name === "string" ? body.name.trim().slice(0, MAX_NAME_LENGTH) : "";
   const content = body.content as { values?: unknown; rows?: unknown } | undefined;
   const pdf = typeof body.pdf === "string" ? Buffer.from(body.pdf, "base64") : null;
@@ -49,6 +51,7 @@ export const handleCreateDocument: RequestHandler = async (req, res) => {
     !name ||
     !isStringRecord(content?.values) ||
     !isStringGrid(content?.rows) ||
+    (categoryCode !== null && (typeof categoryCode !== "string" || !CATEGORY_CODE_PATTERN.test(categoryCode))) ||
     !pdf ||
     pdf.subarray(0, 5).toString("latin1") !== "%PDF-"
   ) {
@@ -76,6 +79,7 @@ export const handleCreateDocument: RequestHandler = async (req, res) => {
       user_id: req.rapport_user!.sub,
       template_type: templateType,
       name,
+      category_code: categoryCode,
       url: bucket.getPublicUrl(storagePath(id)).data.publicUrl,
       content: { values: content.values, rows: content.rows },
     })

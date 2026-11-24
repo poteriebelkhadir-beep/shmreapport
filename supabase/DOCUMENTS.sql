@@ -12,12 +12,14 @@ create table if not exists public.generated_documents (
   name          text        not null,
   content       jsonb       not null,
   url           text,
+  category_code text,
   created_at    timestamptz not null default now()
 );
 
 -- Si la table existe déjà avec user_id de type uuid, la convertir en text.
 alter table public.generated_documents alter column user_id type text using user_id::text;
 alter table public.generated_documents add column if not exists url text;
+alter table public.generated_documents add column if not exists category_code text;
 
 create index if not exists generated_documents_user_created_idx
   on public.generated_documents (user_id, created_at desc);

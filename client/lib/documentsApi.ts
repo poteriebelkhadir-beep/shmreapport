@@ -7,6 +7,7 @@ export interface SavedDocument {
   template_type: TemplateId;
   name: string;
   content: DocumentContent;
+  category_code: string | null;
   url: string | null;
   created_at: string;
 }
@@ -29,12 +30,18 @@ export async function listDocuments(): Promise<SavedDocument[]> {
 }
 
 export async function createDocument(
-  document: Pick<SavedDocument, "template_type" | "name" | "content"> & { pdf: Blob },
+  document: Pick<SavedDocument, "template_type" | "name" | "content" | "category_code"> & { pdf: Blob },
 ): Promise<void> {
   const pdf = await blobToBase64(document.pdf);
   await request("/api/documents", {
     method: "POST",
-    body: JSON.stringify({ template_type: document.template_type, name: document.name, content: document.content, pdf }),
+    body: JSON.stringify({
+      template_type: document.template_type,
+      name: document.name,
+      content: document.content,
+      category_code: document.category_code,
+      pdf,
+    }),
   });
 }
 

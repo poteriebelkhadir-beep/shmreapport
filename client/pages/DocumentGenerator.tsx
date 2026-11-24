@@ -4,6 +4,9 @@ import Layout from "@/components/Layout";
 import { downloadPdf } from "@/lib/pdfFile";
 import { buildDocumentBlocks, renderPdf, type TemplateId } from "@/lib/documentRenderer";
 import { createDocument } from "@/lib/documentsApi";
+import { resolveDocumentCategory } from "@/lib/documentCategories";
+import { useDocumentCategory } from "@/contexts/DocumentCategoryContext";
+import DocumentCategoryPicker from "@/components/DocumentCategoryPicker";
 
 const templates: { id: TemplateId; label: string; description: string; icon: string }[] = [
   { id: "hierarchy", label: "هيكلة دورية", description: "تحديد أدوار أفراد الدورية", icon: "🧭" },
@@ -16,6 +19,7 @@ const MEMBER_ROLES = ["مراقب الزي", "أمين المال", "مسؤول 
 
 export default function DocumentGenerator() {
   const navigate = useNavigate();
+  const { category, selectCategory, clearCategory } = useDocumentCategory();
   const [template, setTemplate] = useState<TemplateId | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [rows, setRows] = useState<string[][]>([["", ""]]);
@@ -60,14 +64,15 @@ export default function DocumentGenerator() {
   );
 
   const makeDocument = async () => {
-    if (!template) return;
-    const { name, blocks } = buildDocumentBlocks(template, values, rows);
+    if (!template || !category) return;
 
     setIsExporting(true);
     setNotice(null);
     try {
+      const resolvedCategory = await resolveDocumentCategory(category);
+      const { name, blocks } = buildDocumentBlocks(template, values, rows, resolvedCategory);
       const pdf = await renderPdf({ name, pages: [blocks] });
-      await createDocument({ template_type: template, name, content: { values, rows }, pdf });
+      await createDocument({ template_type: template, name, content: { values, rows }, category_code: category.code, pdf });
       setNotice(await downloadPdf(pdf));
     } catch (error) {
       console.error("Erreur génération PDF:", error);
@@ -84,6 +89,13 @@ export default function DocumentGenerator() {
           <div>
             <h1 className="text-3xl font-black shm-text-gradient md:text-4xl">إنشاء المستندات</h1>
             <p className="mt-3 text-sm font-medium text-gray-500">إنشاء وطباعة مستندات PDF الرسمية لفوج عمر الفاروق</p>
+            {category && (
+              <div className="mt-4 flex items-center gap-3">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: category.couleur }} />
+                <span className="text-sm font-bold text-gray-700">الفئة: {category.nom_ar}</span>
+                <button type="button" onClick={clearCategory} className="text-sm font-bold text-primary hover:underline">تغيير</button>
+              </div>
+            )}
           </div>
           {template ? (
             <button onClick={() => setTemplate(null)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50">العودة إلى النماذج</button>
@@ -95,7 +107,9 @@ export default function DocumentGenerator() {
           )}
         </div>
 
-        {!template ? (
+        {!category ? (
+          <DocumentCategoryPicker onSelect={selectCategory} />
+        ) : !template ? (
           <div className="grid gap-5 sm:grid-cols-2">
             {templates.map((item) => (
               <button key={item.id} onClick={() => chooseTemplate(item.id)} className="shm-card group text-right hover:-translate-y-1">

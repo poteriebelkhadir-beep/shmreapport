@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { downloadPdf } from "@/lib/pdfFile";
 import { buildDocumentBlocks, renderPdf, TEMPLATE_LABELS, type TemplateId } from "@/lib/documentRenderer";
 import { deleteDocument, listDocuments, type SavedDocument } from "@/lib/documentsApi";
+import { getDocumentCategory, resolveDocumentCategory } from "@/lib/documentCategories";
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -40,7 +41,9 @@ export default function Documents() {
     setExporting(doc.id);
     setNotice(null);
     try {
-      const { blocks } = buildDocumentBlocks(doc.template_type, doc.content.values, doc.content.rows);
+      const category = getDocumentCategory(doc.category_code);
+      const resolvedCategory = category ? await resolveDocumentCategory(category) : null;
+      const { blocks } = buildDocumentBlocks(doc.template_type, doc.content.values, doc.content.rows, resolvedCategory);
       setNotice(await downloadPdf(await renderPdf({ name: doc.name, pages: [blocks] })));
     } catch (error) {
       console.error("Erreur génération PDF:", error);
