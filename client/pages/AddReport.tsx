@@ -7,11 +7,27 @@ import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { offlineStorage } from "@/lib/storage/offlineStorage";
 import { syncManager } from "@/lib/sync/syncManager";
 
-const CATEGORIES = [
-  { id: "ashbal_zahrat", label: "أشبال و زهرات" },
-  { id: "kashafa_mourshidat", label: "كشافة و مرشدات" },
-  { id: "kashaf_moutaqadim_raidat", label: "كشاف متقدم و رائدات" },
-  { id: "jawala_dalilat", label: "الجوالة و الدليلات" },
+const AGE_CATEGORIES = [
+  {
+    id: "ashbal_zahrat",
+    label: "أشبال و زهرات",
+    logo: "/logo-ashbal.png",
+  },
+  {
+    id: "kashafa_mourshidat",
+    label: "كشافة و مرشدات",
+    logo: "/logo-kashafa.png",
+  },
+  {
+    id: "kashaf_moutaqadem_raidat",
+    label: "كشاف متقدم و رائدات",
+    logo: "/logo-moutaqadem.png",
+  },
+  {
+    id: "jawala_dalilat",
+    label: "الجوالة و الدليلات",
+    logo: "/logo-jawala.png",
+  },
 ];
 
 export default function AddReport() {
@@ -36,8 +52,7 @@ export default function AddReport() {
     recommendations: "",
   });
 
-  const [selectedOrganizingCategories, setSelectedOrganizingCategories] = useState<string[]>([]);
-  const [selectedTargetCategories, setSelectedTargetCategories] = useState<string[]>([]);
+  const [selectedAgeCategory, setSelectedAgeCategory] = useState<string | null>(null);
   const [logos, setLogos] = useState<File[]>([]);
   const [logoPreviews, setLogoPreviews] = useState<string[]>([]);
 
@@ -47,22 +62,6 @@ export default function AddReport() {
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleOrganizingCategoryToggle = (categoryId: string) => {
-    setSelectedOrganizingCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
-  };
-
-  const handleTargetCategoryToggle = (categoryId: string) => {
-    setSelectedTargetCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,11 +95,11 @@ export default function AddReport() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedOrganizingCategories.length === 0 || selectedTargetCategories.length === 0) {
+    if (!selectedAgeCategory) {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "يرجى اختيار فئة منظمة ومستهدفة واحدة على الأقل.",
+        description: "يرجى اختيار فئة عمرية.",
       });
       return;
     }
@@ -123,15 +122,9 @@ export default function AddReport() {
       );
 
       // 2. Submit report data
-      const organizingCategoryLabels = selectedOrganizingCategories
-        .map((id) => CATEGORIES.find((cat) => cat.id === id)?.label)
-        .filter(Boolean)
-        .join(" - ");
-
-      const targetCategoryLabels = selectedTargetCategories
-        .map((id) => CATEGORIES.find((cat) => cat.id === id)?.label)
-        .filter(Boolean)
-        .join(" - ");
+      const selectedCat = AGE_CATEGORIES.find((cat) => cat.id === selectedAgeCategory);
+      const categoryLabel = selectedCat?.label ?? "";
+      const categoryLogo = selectedCat?.logo ?? "";
 
       const localId = crypto.randomUUID();
       const reportData = {
@@ -144,8 +137,8 @@ export default function AddReport() {
         participants_boys: Number(formData.boysCount),
         participants_girls: Number(formData.girlsCount),
         leaders_count: Number(formData.leadersCount),
-        category: organizingCategoryLabels,
-        beneficiary: targetCategoryLabels,
+        category: categoryLabel,
+        beneficiary: categoryLabel,
         description_original: formData.description,
         description_reformulated: formData.description,
         evaluation_positive: formData.evaluationPositive,
@@ -178,7 +171,10 @@ export default function AddReport() {
             evaluationNegative: formData.evaluationNegative,
           },
           title: formData.title,
-          logos: logosData.map((logo) => `data:${logo.type};base64,${logo.data}`),
+          logos: [
+            categoryLogo,
+            ...logosData.map((logo) => `data:${logo.type};base64,${logo.data}`),
+          ],
         },
       });
     } catch (error: any) {
@@ -211,6 +207,36 @@ export default function AddReport() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Age Category Selection */}
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1">
+                الفئة العمرية
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {AGE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedAgeCategory(cat.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 px-4 py-4 rounded-2xl text-[10px] font-black transition-all border-2",
+                      selectedAgeCategory === cat.id
+                        ? "shm-gradient text-white border-transparent shadow-lg shadow-primary/20"
+                        : "bg-gray-50 text-gray-400 border-transparent hover:bg-gray-100"
+                    )}
+                  >
+                    <img
+                      src={cat.logo}
+                      alt={cat.label}
+                      className="w-10 h-10 object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Logos Section */}
             <div className="space-y-4 p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1 mb-4">
@@ -311,50 +337,6 @@ export default function AddReport() {
                   onChange={handleChange}
                   className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
                 />
-              </div>
-            </div>
-
-            {/* Organizing Categories */}
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1">الفئة المنظمة</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleOrganizingCategoryToggle(cat.id)}
-                    className={cn(
-                      "px-4 py-4 rounded-2xl text-[10px] font-black transition-all border-2",
-                      selectedOrganizingCategories.includes(cat.id)
-                        ? "shm-gradient text-white border-transparent shadow-lg shadow-primary/20"
-                        : "bg-gray-50 text-gray-400 border-transparent hover:bg-gray-100"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Target Categories (Beneficiary) */}
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1">الفئة المستهدفة</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleTargetCategoryToggle(cat.id)}
-                    className={cn(
-                      "px-4 py-4 rounded-2xl text-[10px] font-black transition-all border-2",
-                      selectedTargetCategories.includes(cat.id)
-                        ? "shm-gradient text-white border-transparent shadow-lg shadow-primary/20"
-                        : "bg-gray-50 text-gray-400 border-transparent hover:bg-gray-100"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
               </div>
             </div>
 
