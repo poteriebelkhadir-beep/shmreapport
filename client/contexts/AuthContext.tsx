@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import {
   isSessionValid,
   clearSession,
@@ -10,6 +10,7 @@ import {
 interface AuthContextType {
   isAuthenticated: boolean;
   user: SessionUser | null;
+  refresh: () => void;
   signOut: () => void;
 }
 
@@ -18,6 +19,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => isSessionValid());
   const [user, setUser] = useState<SessionUser | null>(() => getSessionUser());
+
+  const refresh = useCallback(() => {
+    const valid = isSessionValid();
+    setIsAuthenticated(valid);
+    setUser(valid ? getSessionUser() : null);
+  }, []);
 
   useEffect(() => {
     // Vérification serveur en arrière-plan : si le compte a été désactivé ou
@@ -28,12 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(ok ? getSessionUser() : null);
     });
 
-    const refresh = () => {
-      const valid = isSessionValid();
-      setIsAuthenticated(valid);
-      setUser(valid ? getSessionUser() : null);
-    };
-
     const id = window.setInterval(refresh, 60_000);
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("storage", refresh);
@@ -42,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("storage", refresh);
     };
-  }, []);
+  }, [refresh]);
 
   const signOut = () => {
     clearSession();
@@ -51,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ isAuthenticated, user, refresh, signOut }}>{children}</AuthContext.Provider>
   );
 };
 
