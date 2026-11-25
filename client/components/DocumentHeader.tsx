@@ -42,15 +42,15 @@ export function DocumentHeader({ category, categoryLogoSrc, baseUrl = "" }: Docu
   return (
     <>
       <div style={rule} />
-      <header style={{ display: "flex", alignItems: "center", gap: 18, margin: "14px 0" }}>
-        <div style={logoSlot}>
+      <header style={{ display: "grid", gridTemplateColumns: `${LOGO_SIZE}px 1fr ${LOGO_SIZE}px`, alignItems: "center", gap: 18, margin: "14px 0", direction: "rtl" }}>
+        <div style={{ ...logoSlot, gridColumn: 3 }}>
           <img src={`${baseUrl}${SHM_SAFI_LOGO_PATH}`} alt="SHM Safi" style={logoImage} />
         </div>
-        <div style={{ flex: 1, textAlign: "center", lineHeight: 1.7 }}>
-          <p style={{ margin: 0, fontWeight: 700 }}>بسم الله الرحمن الرحيم</p>
+        <div style={{ gridColumn: 2, textAlign: "center", lineHeight: 1.8 }}>
+          <p style={{ margin: 0, fontWeight: 800, fontSize: 18 }}>بسم الله الرحمن الرحيم</p>
           <p style={{ margin: 0 }}>الكشفية الحسنية المغربية</p>
         </div>
-        <div style={logoSlot}>
+        <div style={{ ...logoSlot, gridColumn: 1 }}>
           {category &&
             (categoryLogoSrc ? (
               <img src={`${baseUrl}${categoryLogoSrc}`} alt={category.nom_fr} style={logoImage} />

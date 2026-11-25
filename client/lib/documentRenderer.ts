@@ -139,21 +139,19 @@ export function buildDocumentBlocks(
       },
     ];
   } else if (template === "technical") {
-    name = `بطاقة تقنية ${value("patrolName")}`;
+    name = `بطاقة تقنية — ${value("activity")}`;
     blocks = [
       { kind: "heading", text: "بطاقة تقنية", level: 1 },
-      { kind: "heading", text: "تقديم الدورية", level: 2 },
-      { kind: "keyvalue", rows: [["اسم الدورية", value("patrolName")], ["رائد الدورية", value("leaderName")], ["معدّ البطاقة التقنية", value("authorName")]] },
+      { kind: "keyvalue", rows: [["معدّ البطاقة التقنية", value("authorName")]] },
       { kind: "heading", text: "معلومات النشاط", level: 2 },
       { kind: "keyvalue", rows: [["النشاط", value("activity")], ["الهدف من النشاط", value("goal")], ["شعار النشاط", value("slogan")], ["التاريخ", value("date")], ["المكان", value("place")], ["الفئة المنظمة", value("organizingCategory")], ["المكلف بالإعلام", value("mediaContact")], ["الفئة المستهدفة", value("targetAudience")],["الحاجيات", value("needs")]] },
       ...(rows.some((row) => row.some((cell) => cell.trim())) ? [{ kind: "heading", text: "برنامج النشاط", level: 2 } as PrintBlock, { kind: "table", columns: ["التوقيت", "الفقرة"], rows: rows.filter((row) => row.some((cell) => cell.trim())) } as PrintBlock] : []),
     ];
   } else if (template === "proposals") {
-    name = `مقترحات ${value("patrolName")}`;
+    name = `اقتراحات المرحلة — ${value("authorName")}`;
     blocks = [
       { kind: "heading", text: "اقتراحات المرحلة القادمة", level: 1 },
-      { kind: "heading", text: "تقديم الدورية", level: 2 },
-      { kind: "keyvalue", rows: [["اسم الدورية", value("patrolName")], ["عدد الأفراد", value("memberCount")], ["رائد الدورية", value("leaderName")], ["معدّ الاقتراحات", value("authorName")]] },
+      { kind: "keyvalue", rows: [["معدّ الاقتراحات", value("authorName")]] },
       ...(values.intro?.trim() ? [{ kind: "text", text: values.intro.trim() } as PrintBlock] : []),
       { kind: "table", columns: ["التاريخ", "الحصة", "التفاصيل"], rows: rows.filter((row) => row.some((cell) => cell.trim())) },
     ];

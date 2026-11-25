@@ -8,6 +8,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const DOCUMENT_COLUMNS = "id, template_type, name, content, category_code, url, created_at";
 const CATEGORY_CODE_PATTERN = /^[a-z-]{1,40}$/;
 const STORAGE_BUCKET = "generated-documents";
+const LEGACY_PATROL_KEYS = ["patrolName", "leaderName", "memberCount"];
 
 const storagePath = (id: string) => `${id}.pdf`;
 
@@ -59,6 +60,15 @@ export const handleCreateDocument: RequestHandler = async (req, res) => {
     return;
   }
 
+  let values = content.values;
+  if (templateType === "technical" || templateType === "proposals") {
+    if (!values.authorName?.trim()) {
+      res.status(400).json({ error: "اسم المعدّ مطلوب." });
+      return;
+    }
+    values = Object.fromEntries(Object.entries(values).filter(([key]) => !LEGACY_PATROL_KEYS.includes(key)));
+  }
+
   const id = randomUUID();
   const bucket = supabaseAdmin.storage.from(STORAGE_BUCKET);
 
@@ -81,7 +91,7 @@ export const handleCreateDocument: RequestHandler = async (req, res) => {
       name,
       category_code: categoryCode,
       url: bucket.getPublicUrl(storagePath(id)).data.publicUrl,
-      content: { values: content.values, rows: content.rows },
+      content: { values, rows: content.rows },
     })
     .select(DOCUMENT_COLUMNS)
     .single();
