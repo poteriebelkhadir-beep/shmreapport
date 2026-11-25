@@ -15,7 +15,7 @@ export interface DocumentHeaderData {
 export const DOCUMENT_CATEGORIES: DocumentCategory[] = [
   { code: "baraim-ashbal-zahrat", nom_ar: "براعم وأشبال وزهرات", nom_fr: "Baraim, Ashbal & Zahrat", couleur: "#7DD3FC", logo_url: "/assets/logos/achbal.png", slogan: "أقصى جهدنا" },
   { code: "kachchaf-murchidat", nom_ar: "الكشاف والمرشدات", nom_fr: "Kachchaf & Murchidat", couleur: "#059669", logo_url: "/assets/logos/kachafa.png", slogan: "دائما مستعد" },
-  { code: "mutaqaddim-raidat", nom_ar: "كشاف متقدم والرائدات", nom_fr: "Kachchaf Mutaqaddim & Raïdat", couleur: "#DC2626", logo_url: "/assets/logos/motakadim.png", slogan: "خدمة الصالح العام" },
+  { code: "mutaqaddim-raidat", nom_ar: "كشاف متقدم ومرشدات متقدمات", nom_fr: "Kachchaf Mutaqaddim & Raïdat", couleur: "#DC2626", logo_url: "/assets/logos/motakadim.png", slogan: "خدمة الصالح العام" },
   { code: "jawwala-dalilat", nom_ar: "الجوالة والدليلات", nom_fr: "Jawwala & Dalilat", couleur: "#FDE68A", logo_url: "/assets/logos/jowala.png", slogan: "تنمية المجتمع" },
 ];
 
