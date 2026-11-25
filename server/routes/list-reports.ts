@@ -4,7 +4,7 @@ import { supabaseAdmin } from "../lib/supabase";
 export const handleListReportCatalog: RequestHandler = async (_req, res) => {
   const { data, error } = await supabaseAdmin
     .from("reports")
-    .select("id, title, location, time, pdf_url, created_at")
+    .select("id, title, location, time, pdf_url, category_code, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {

@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { DocumentCategoryProvider } from "@/contexts/DocumentCategoryContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { offlineStorage } from "@/lib/storage/offlineStorage";
 import { syncManager } from "@/lib/sync/syncManager";
@@ -18,6 +19,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import SequenceReport from "./pages/SequenceReport";
+import Documents from "./pages/Documents";
 import DocumentGenerator from "./pages/DocumentGenerator";
 import AddReport from "./pages/AddReport";
 import ReportSuccess from "./pages/ReportSuccess";
@@ -48,34 +50,37 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+        <DocumentCategoryProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-              <Route path="/reports/sequence" element={<ProtectedRoute><SequenceReport /></ProtectedRoute>} />
-              <Route path="/documents" element={<ProtectedRoute><DocumentGenerator /></ProtectedRoute>} />
-              <Route path="/add-report" element={<ProtectedRoute><AddReport /></ProtectedRoute>} />
-              <Route path="/report-success" element={<ProtectedRoute><ReportSuccess /></ProtectedRoute>} />
-              <Route path="/add-session" element={<ProtectedRoute><AddSession /></ProtectedRoute>} />
-              <Route path="/sync-cache" element={<ProtectedRoute><SyncCache /></ProtectedRoute>} />
-              <Route path="/program" element={<ProtectedRoute><Program /></ProtectedRoute>} />
-              <Route path="/ideas" element={<ProtectedRoute><Ideas /></ProtectedRoute>} />
-              <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                <Route path="/reports/sequence" element={<ProtectedRoute><SequenceReport /></ProtectedRoute>} />
+                <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                <Route path="/documents/new" element={<ProtectedRoute><DocumentGenerator /></ProtectedRoute>} />
+                <Route path="/add-report" element={<ProtectedRoute><AddReport /></ProtectedRoute>} />
+                <Route path="/report-success" element={<ProtectedRoute><ReportSuccess /></ProtectedRoute>} />
+                <Route path="/add-session" element={<ProtectedRoute><AddSession /></ProtectedRoute>} />
+                <Route path="/sync-cache" element={<ProtectedRoute><SyncCache /></ProtectedRoute>} />
+                <Route path="/program" element={<ProtectedRoute><Program /></ProtectedRoute>} />
+                <Route path="/ideas" element={<ProtectedRoute><Ideas /></ProtectedRoute>} />
+                <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </DocumentCategoryProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

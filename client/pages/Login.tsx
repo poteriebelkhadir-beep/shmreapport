@@ -3,9 +3,11 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import { cn } from "@/lib/utils";
 import { login } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { refresh } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -56,6 +58,7 @@ export default function Login() {
         return;
       }
 
+      refresh();
       navigate("/dashboard", { replace: true });
     } catch {
       setError("تعذر الاتصال بالخادم. تحقق من الشبكة.");

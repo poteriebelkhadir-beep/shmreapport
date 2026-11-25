@@ -1,14 +1,15 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import DocumentCategoryPicker from "@/components/DocumentCategoryPicker";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { offlineStorage } from "@/lib/storage/offlineStorage";
 import { syncManager } from "@/lib/sync/syncManager";
+import { useDocumentCategory } from "@/contexts/DocumentCategoryContext";
 
 const CATEGORIES = [
-  { id: "ashbal_zahrat", label: "أشبال و زهرات" },
+  { id: "ashbal_zahrat", label: "براعم و أشبال و زهرات" },
   { id: "kashafa_mourshidat", label: "كشافة و مرشدات" },
   { id: "kashaf_moutaqadim_raidat", label: "كشاف متقدم و رائدات" },
   { id: "jawala_dalilat", label: "الجوالة و الدليلات" },
@@ -17,9 +18,9 @@ const CATEGORIES = [
 export default function AddReport() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { category, selectCategory, clearCategory } = useDocumentCategory();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     location: "",
@@ -29,7 +30,6 @@ export default function AddReport() {
     boysCount: 0,
     girlsCount: 0,
     leadersCount: 0,
-    beneficiary: "",
     description: "",
     evaluationPositive: "",
     evaluationNegative: "",
@@ -37,9 +37,6 @@ export default function AddReport() {
   });
 
   const [selectedOrganizingCategories, setSelectedOrganizingCategories] = useState<string[]>([]);
-  const [selectedTargetCategories, setSelectedTargetCategories] = useState<string[]>([]);
-  const [logos, setLogos] = useState<File[]>([]);
-  const [logoPreviews, setLogoPreviews] = useState<string[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -57,50 +54,21 @@ export default function AddReport() {
     );
   };
 
-  const handleTargetCategoryToggle = (categoryId: string) => {
-    setSelectedTargetCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
-  };
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (logos.length + files.length > 3) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!category) {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "يمكنك رفع 3 شعارات كحد أقصى.",
+        description: "يرجى اختيار الفئة المستهدفة.",
       });
       return;
     }
-
-    const newLogos = [...logos, ...files];
-    setLogos(newLogos);
-
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setLogoPreviews((prev) => [...prev, ...newPreviews]);
-  };
-
-  const removeLogo = (index: number) => {
-    const newLogos = [...logos];
-    newLogos.splice(index, 1);
-    setLogos(newLogos);
-
-    const newPreviews = [...logoPreviews];
-    URL.revokeObjectURL(newPreviews[index]);
-    newPreviews.splice(index, 1);
-    setLogoPreviews(newPreviews);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedOrganizingCategories.length === 0 || selectedTargetCategories.length === 0) {
+    if (selectedOrganizingCategories.length === 0) {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "يرجى اختيار فئة منظمة ومستهدفة واحدة على الأقل.",
+        description: "يرجى اختيار فئة منظمة واحدة على الأقل.",
       });
       return;
     }
@@ -108,27 +76,7 @@ export default function AddReport() {
     setIsSubmitting(true);
 
     try {
-      // 1. Prepare logos as Base64 strings
-      const logosData = await Promise.all(
-        logos.map(async (logo) => {
-          const reader = new FileReader();
-          return new Promise<{ name: string; type: string; data: string }>((resolve) => {
-            reader.onload = (e) => {
-              const base64 = (e.target?.result as string).split(",")[1];
-              resolve({ name: logo.name, type: logo.type, data: base64 });
-            };
-            reader.readAsDataURL(logo);
-          });
-        })
-      );
-
-      // 2. Submit report data
       const organizingCategoryLabels = selectedOrganizingCategories
-        .map((id) => CATEGORIES.find((cat) => cat.id === id)?.label)
-        .filter(Boolean)
-        .join(" - ");
-
-      const targetCategoryLabels = selectedTargetCategories
         .map((id) => CATEGORIES.find((cat) => cat.id === id)?.label)
         .filter(Boolean)
         .join(" - ");
@@ -145,7 +93,8 @@ export default function AddReport() {
         participants_girls: Number(formData.girlsCount),
         leaders_count: Number(formData.leadersCount),
         category: organizingCategoryLabels,
-        beneficiary: targetCategoryLabels,
+        beneficiary: category.nom_ar,
+        category_code: category.code,
         description_original: formData.description,
         description_reformulated: formData.description,
         evaluation_positive: formData.evaluationPositive,
@@ -178,7 +127,6 @@ export default function AddReport() {
             evaluationNegative: formData.evaluationNegative,
           },
           title: formData.title,
-          logos: logosData.map((logo) => `data:${logo.type};base64,${logo.data}`),
         },
       });
     } catch (error: any) {
@@ -210,48 +158,14 @@ export default function AddReport() {
             <div className="w-16 h-1.5 shm-gradient mx-auto rounded-full"></div>
           </div>
 
+          {!category ? (
+            <DocumentCategoryPicker onSelect={selectCategory} />
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Logos Section */}
-            <div className="space-y-4 p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
-              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1 mb-4">
-                تحميل الشعارات (3 كحد أقصى)
-              </label>
-              
-              <div className="flex flex-wrap gap-4">
-                {logoPreviews.map((preview, index) => (
-                  <div key={index} className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary/20 group">
-                    <img src={preview} alt={`Logo preview ${index + 1}`} className="w-full h-full object-contain bg-white" />
-                    <button
-                      type="button"
-                      onClick={() => removeLogo(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-                
-                {logos.length < 3 && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-24 h-24 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-primary/50 hover:text-primary transition-all bg-white"
-                  >
-                    <Upload size={20} className="mb-1" />
-                    <span className="text-[10px] font-bold">إضافة</span>
-                  </button>
-                )}
-              </div>
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleLogoChange}
-                accept="image/png,image/jpeg,image/jpg"
-                multiple
-                className="hidden"
-              />
-              <p className="text-[10px] text-gray-400 font-medium">الأنواع المسموحة: PNG, JPG, JPEG. (تستخدم لتخصيص الهوية البصرية للتقرير)</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: category.couleur }} />
+              <span className="text-sm font-bold text-gray-700">الفئة المستهدفة: {category.nom_ar}</span>
+              <button type="button" onClick={clearCategory} className="text-sm font-bold text-primary hover:underline">تغيير</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -314,7 +228,6 @@ export default function AddReport() {
               </div>
             </div>
 
-            {/* Organizing Categories */}
             <div className="space-y-4">
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1">الفئة المنظمة</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -326,28 +239,6 @@ export default function AddReport() {
                     className={cn(
                       "px-4 py-4 rounded-2xl text-[10px] font-black transition-all border-2",
                       selectedOrganizingCategories.includes(cat.id)
-                        ? "shm-gradient text-white border-transparent shadow-lg shadow-primary/20"
-                        : "bg-gray-50 text-gray-400 border-transparent hover:bg-gray-100"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Target Categories (Beneficiary) */}
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mr-1">الفئة المستهدفة</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleTargetCategoryToggle(cat.id)}
-                    className={cn(
-                      "px-4 py-4 rounded-2xl text-[10px] font-black transition-all border-2",
-                      selectedTargetCategories.includes(cat.id)
                         ? "shm-gradient text-white border-transparent shadow-lg shadow-primary/20"
                         : "bg-gray-50 text-gray-400 border-transparent hover:bg-gray-100"
                     )}
@@ -458,6 +349,7 @@ export default function AddReport() {
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     </Layout>

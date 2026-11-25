@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
+import ListFiltersBar from "@/components/ListFiltersBar";
 import { API_BASE, getAuthHeaders } from "@/lib/auth";
+import { getDocumentCategory } from "@/lib/documentCategories";
+import { EMPTY_LIST_FILTERS, filterItems, type ListFilters } from "@/lib/listFilters";
 
 interface Report {
   id: string;
@@ -8,6 +11,7 @@ interface Report {
   location: string;
   time: string;
   pdf_url?: string;
+  category_code: string | null;
   created_at: string;
 }
 
@@ -49,6 +53,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState<string | null>(null);
   const [cacheInfo, setCacheInfo] = useState<{ savedAt: string } | null>(null);
+  const [filters, setFilters] = useState<ListFilters>(EMPTY_LIST_FILTERS);
+  const visibleReports = useMemo(() => filterItems(reports, filters, (report) => report.title), [reports, filters]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,6 +115,12 @@ export default function Reports() {
         </div>
       )}
 
+      {!loading && !debugError && reports.length > 0 && (
+        <div className="mb-8">
+          <ListFiltersBar value={filters} onChange={setFilters} />
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-24">
           <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-primary"></div>
@@ -120,8 +132,8 @@ export default function Reports() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in zoom-in-95 duration-700">
-          {reports.length > 0 ? (
-              reports.map((report) => (
+          {visibleReports.length > 0 ? (
+              visibleReports.map((report) => (
                 <div key={report.id} className="shm-card group">
                   <div className="w-12 h-12 shm-gradient text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-primary/10 group-hover:scale-110 transition-transform">
                     <span className="text-xl">📄</span>
@@ -130,6 +142,7 @@ export default function Reports() {
                     {report.title}
                   </h3>
                   <div className="text-sm text-gray-400 font-bold space-y-2 mb-6 border-t border-gray-50 pt-4">
+                    <p className="flex items-center gap-2">🏷️ {getDocumentCategory(report.category_code)?.nom_ar ?? "بدون فئة"}</p>
                     <p className="flex items-center gap-2">📍 {report.location}</p>
                     <p className="flex items-center gap-2">🕒 {report.time}</p>
                     <p className="flex items-center gap-2">📅 {new Date(report.created_at).toLocaleDateString("ar-MA")}</p>
@@ -152,7 +165,7 @@ export default function Reports() {
               ))
             ) : (
               <div className="col-span-full text-center py-24 bg-white border-2 border-dashed border-gray-100 rounded-[3rem]">
-                <p className="text-gray-300 font-black uppercase tracking-[0.2em]">لا توجد تقارير متاحة حالياً</p>
+                <p className="text-gray-300 font-black uppercase tracking-[0.2em]">{reports.length > 0 ? "لا توجد نتائج مطابقة للبحث أو الفلاتر" : "لا توجد تقارير متاحة حالياً"}</p>
               </div>
           )}
         </div>
