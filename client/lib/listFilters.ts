@@ -1,3 +1,5 @@
+import { normalizeCategoryCode } from "@/lib/documentCategories";
+
 export interface ListFilters {
   query: string;
   categoryCode: string;
@@ -19,7 +21,7 @@ export function filterItems<T extends FilterableItem>(items: T[], filters: ListF
   const query = filters.query.trim().toLowerCase();
 
   return items.filter((item) => {
-    if (filters.categoryCode !== "all" && item.category_code !== filters.categoryCode) return false;
+    if (filters.categoryCode !== "all" && normalizeCategoryCode(item.category_code) !== filters.categoryCode) return false;
 
     const day = item.created_at.slice(0, 10);
     if (filters.from && day < filters.from) return false;

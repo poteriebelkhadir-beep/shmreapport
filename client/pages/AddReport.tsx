@@ -9,7 +9,7 @@ import { syncManager } from "@/lib/sync/syncManager";
 import { useDocumentCategory } from "@/contexts/DocumentCategoryContext";
 
 const CATEGORIES = [
-  { id: "ashbal_zahrat", label: "أشبال و زهرات" },
+  { id: "ashbal_zahrat", label: "براعم و أشبال و زهرات" },
   { id: "kashafa_mourshidat", label: "كشافة و مرشدات" },
   { id: "kashaf_moutaqadim_raidat", label: "كشاف متقدم و رائدات" },
   { id: "jawala_dalilat", label: "الجوالة و الدليلات" },

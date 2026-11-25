@@ -24,14 +24,14 @@ function CategoryCard({ category, onSelect }: { category: DocumentCategory; onSe
   return (
     <button type="button" onClick={() => onSelect(category.code)} className="shm-card overflow-hidden p-0 text-right transition hover:-translate-y-0.5">
       <div
-        className="flex items-center gap-4 px-5 py-4"
+        className="flex flex-col items-center gap-3 px-3 py-4 text-center sm:flex-row sm:gap-4 sm:px-5 sm:text-right"
         style={{ backgroundColor: category.couleur, color: isDarkColor(category.couleur) ? "#ffffff" : "#1f2937" }}
       >
         <CategoryLogo category={category} />
-        <span className="text-xl font-black">{category.nom_ar}</span>
+        <span className="min-w-0 break-words text-base font-black leading-snug sm:text-xl">{category.nom_ar}</span>
       </div>
-      <div className="flex items-center justify-between px-5 py-3 text-sm font-bold text-gray-600">
-        <span>فئة {category.nom_fr}</span>
+      <div className="flex items-center justify-between gap-2 px-3 py-3 text-xs font-bold text-gray-600 sm:px-5 sm:text-sm">
+        <span className="min-w-0 break-words">فئة {category.nom_fr}</span>
         <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-gray-700">{category.nom_fr.charAt(0)}</span>
       </div>
     </button>
@@ -45,7 +45,7 @@ export default function DocumentCategoryPicker({ onSelect }: { onSelect: (code: 
         <h2 className="text-2xl font-black text-gray-800">اختر الفئة</h2>
         <p className="mt-2 text-sm font-medium text-gray-500">يُضاف شعار الفئة واسمها تلقائيًا إلى كل مستند</p>
       </div>
-      <div className="mx-auto flex max-w-md flex-col gap-4">
+      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-3 sm:gap-4">
         {DOCUMENT_CATEGORIES.map((category) => (
           <CategoryCard key={category.code} category={category} onSelect={onSelect} />
         ))}
